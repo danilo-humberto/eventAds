@@ -5,6 +5,9 @@
     "version": "1.0.0",
     "plugins": [
       "@react-native-community/datetimepicker"
-    ]
+    ],
+    "android": {
+      "softwareKeyboardLayoutMode": "resize"
+    }
   }
 }

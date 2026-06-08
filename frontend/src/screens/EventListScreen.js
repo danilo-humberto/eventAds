@@ -1,93 +1,96 @@
-import React, { useState } from "react";
+import { useFocusEffect } from "@react-navigation/native";
+import { useCallback, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  TextInput,
+  ActivityIndicator,
   Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import {
-  Menu,
-  Search,
-  SlidersHorizontal,
   CalendarDays,
   Clock,
   MapPin,
+  Menu,
   Pencil,
+  Search,
+  SlidersHorizontal,
   Trash2,
-  Sparkles,
-  Cpu,
-  Trophy,
 } from "lucide-react-native";
 
+import api from "../services/api";
 import { colors } from "../styles/colors";
-
-const eventosMock = [
-  {
-    id: 1,
-    titulo: "Workshop de React Native",
-    data: "15/09/2026",
-    hora: "19h00",
-    local: "Auditório IFPE",
-    tipo: "Workshop",
-    icon: "sparkles",
-  },
-  {
-    id: 2,
-    titulo: "Palestra de Inteligência Artificial",
-    data: "20/09/2026",
-    hora: "18h30",
-    local: "Sala 201 - IFPE",
-    tipo: "Palestra",
-    icon: "cpu",
-  },
-  {
-    id: 3,
-    titulo: "Semana de ADS 2026",
-    data: "05/10/2026",
-    hora: "16h00",
-    local: "Campus Recife",
-    tipo: "Evento",
-    icon: "trophy",
-  },
-];
 
 export default function EventListScreen({ navigation }) {
   const [busca, setBusca] = useState("");
+  const [eventos, setEventos] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  async function carregarEventos() {
+    try {
+      const response = await api.get("/events");
+
+      setEventos(response.data);
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", "Não foi possível carregar os eventos.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useFocusEffect(
+    useCallback(() => {
+      carregarEventos();
+    }, []),
+  );
 
   function editarEvento(evento) {
     navigation.navigate("EventForm", { evento });
   }
 
-  function excluirEvento(evento) {
-    Alert.alert("Excluir evento", `Depois vamos excluir: ${evento.titulo}`);
+  async function confirmarExclusao(evento) {
+    const confirmado = window.confirm(`Deseja excluir "${evento.titulo}"?`);
+
+    if (!confirmado) {
+      return;
+    }
+
+    try {
+      await api.delete(`/events/${evento.id}`);
+
+      window.alert("Evento excluído com sucesso.");
+
+      navigation.goBack();
+    } catch (error) {
+      console.log(error);
+
+      window.alert("Não foi possível excluir o evento.");
+    }
   }
 
   function abrirDetalhes(evento) {
     navigation.navigate("EventDetails", {
       evento: {
         ...evento,
-        descricao:
-          "Aprenda na prática os principais conceitos desse evento acadêmico. A atividade será voltada para tecnologia, inovação e desenvolvimento profissional dos alunos.",
       },
     });
   }
 
-  function renderIcon(tipo) {
-    if (tipo === "cpu") {
-      return <Cpu size={34} color={colors.white} strokeWidth={2.2} />;
-    }
-
-    if (tipo === "trophy") {
-      return <Trophy size={34} color={colors.white} strokeWidth={2.2} />;
-    }
-
-    return <Sparkles size={34} color={colors.white} strokeWidth={2.2} />;
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
   }
 
   return (
@@ -132,7 +135,7 @@ export default function EventListScreen({ navigation }) {
         <Text style={styles.sectionTitle}>Eventos cadastrados</Text>
 
         <View style={styles.listArea}>
-          {eventosMock.map((evento) => (
+          {eventos.map((evento) => (
             <TouchableOpacity
               key={evento.id}
               style={styles.eventCard}
@@ -140,8 +143,19 @@ export default function EventListScreen({ navigation }) {
               activeOpacity={0.85}
             >
               <View style={styles.imageBox}>
-                {renderIcon(evento.icon)}
-                <Text style={styles.imageText}>EVENTADS</Text>
+                {evento.imagem ? (
+                  <Image
+                    source={{ uri: evento.imagem }}
+                    style={styles.eventImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <>
+                    {renderIcon(evento.icon)}
+
+                    <Text style={styles.imageText}>EVENTADS</Text>
+                  </>
+                )}
               </View>
 
               <View style={styles.eventContent}>
@@ -175,7 +189,7 @@ export default function EventListScreen({ navigation }) {
 
                   <TouchableOpacity
                     style={styles.deleteButton}
-                    onPress={() => excluirEvento(evento)}
+                    onPress={() => confirmarExclusao(evento)}
                   >
                     <Trash2 size={13} color={colors.white} />
                     <Text style={styles.actionButtonText}>Excluir</Text>
@@ -194,6 +208,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   scrollContent: {
@@ -328,6 +349,12 @@ const styles = StyleSheet.create({
 
   eventContent: {
     flex: 1,
+  },
+
+  eventImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 20,
   },
 
   eventTop: {

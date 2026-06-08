@@ -1,29 +1,33 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  TextInput,
+  ActivityIndicator,
   Alert,
+  Image,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
 import {
   ArrowLeft,
-  ImagePlus,
   CalendarDays,
   Clock,
-  MapPin,
-  Tag,
   FileText,
+  ImagePlus,
+  MapPin,
   Type,
 } from "lucide-react-native";
 
 import DateTimePicker from "@react-native-community/datetimepicker";
 
+import api from "../services/api";
+import { pickImage, uploadCompleto } from "../services/cloudinaryConfig";
 import { colors } from "../styles/colors";
 
 function formatarData(date) {
@@ -41,86 +45,156 @@ function formatarHora(date) {
   return `${horas}:${minutos}`;
 }
 
-function alterarData(event, selectedDate) {
-  if (Platform.OS === "android") {
-    setMostrarCalendario(false);
-  }
-
-  if (selectedDate) {
-    setDataSelecionada(selectedDate);
-    setData(formatarData(selectedDate));
-  }
-}
-
-function alterarHora(event, selectedTime) {
-  if (Platform.OS === "android") {
-    setMostrarRelogio(false);
-  }
-
-  if (selectedTime) {
-    setHoraSelecionada(selectedTime);
-    setHora(formatarHora(selectedTime));
-  }
-}
-
 export default function EventFormScreen({ navigation, route }) {
   const eventoEdicao = route.params?.evento;
   const modoEdicao = !!eventoEdicao;
+  const [imagem, setImagem] = useState(null);
+  const [loading, setLoading] = useState(false);
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [data, setData] = useState("");
   const [hora, setHora] = useState("");
   const [local, setLocal] = useState("");
-  const [categoria, setCategoria] = useState("");
   const [dataSelecionada, setDataSelecionada] = useState(new Date());
   const [horaSelecionada, setHoraSelecionada] = useState(new Date());
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [mostrarRelogio, setMostrarRelogio] = useState(false);
 
+  function alterarData(event, selectedDate) {
+    if (Platform.OS === "android") {
+      setMostrarCalendario(false);
+    }
+
+    if (selectedDate) {
+      setDataSelecionada(selectedDate);
+      setData(formatarData(selectedDate));
+    }
+  }
+
+  function alterarHora(event, selectedTime) {
+    if (Platform.OS === "android") {
+      setMostrarRelogio(false);
+    }
+
+    if (selectedTime) {
+      setHoraSelecionada(selectedTime);
+      setHora(formatarHora(selectedTime));
+    }
+  }
+
   useEffect(() => {
     if (eventoEdicao) {
+      setImagem(eventoEdicao.imagem ? { uri: eventoEdicao.imagem } : null);
       setTitulo(eventoEdicao.titulo || "");
       setDescricao(eventoEdicao.descricao || "");
       setData(eventoEdicao.data || "");
       setHora(eventoEdicao.hora || "");
       setLocal(eventoEdicao.local || "");
-      setCategoria(eventoEdicao.tipo || eventoEdicao.categoria || "");
     }
   }, [eventoEdicao]);
 
-  function selecionarImagem() {
-    Alert.alert(
-      "Selecionar imagem",
-      "Depois vamos ligar essa ação ao Expo Image Picker e Cloudinary.",
-    );
+  async function selecionarImagem() {
+    try {
+      const photo = await pickImage();
+
+      if (!photo) {
+        return;
+      }
+
+      setImagem(photo);
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", "Não foi possível selecionar a imagem.");
+    }
+  }
+  async function salvarEvento() {
+    try {
+      if (!titulo || !descricao || !data || !hora || !local) {
+        Alert.alert("Campos obrigatórios", "Preencha todos os campos.");
+
+        return;
+      }
+
+      setLoading(true);
+
+      let imageUrl = "";
+
+      if (imagem) {
+        const imagemEhNova =
+          imagem.assetId || imagem.fileName || imagem.mimeType;
+
+        if (imagemEhNova) {
+          const uploadedImage = await uploadCompleto(imagem);
+
+          imageUrl = uploadedImage.secure_url;
+        } else {
+          imageUrl = imagem.uri;
+        }
+      }
+
+      const novoEvento = {
+        titulo,
+        descricao,
+        data,
+        hora,
+        local,
+        imagem: imageUrl,
+        createdAt: new Date().toISOString(),
+      };
+
+      if (modoEdicao) {
+        await api.put(`/events/${eventoEdicao.id}`, {
+          ...eventoEdicao,
+          ...novoEvento,
+        });
+
+        Alert.alert("Sucesso", "Evento atualizado com sucesso.");
+
+        navigation.goBack();
+
+        return;
+      }
+
+      await api.post("/events", novoEvento);
+
+      Alert.alert("Sucesso", "Evento cadastrado com sucesso.");
+
+      navigation.goBack();
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", "Não foi possível salvar o evento.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function salvarEvento() {
-    if (modoEdicao) {
-      Alert.alert(
-        "Evento atualizado",
-        "Depois vamos atualizar esse evento usando Axios e json-server.",
-        [
-          {
-            text: "OK",
-            onPress: () => navigation.goBack(),
-          },
-        ],
-      );
+  const isWeb = Platform.OS === "web";
+  const iconSize = isWeb ? 22 : 18;
 
-      return;
+  function formatarInputData(texto) {
+    const numeros = texto.replace(/\D/g, "");
+
+    if (numeros.length <= 2) {
+      return numeros;
     }
 
-    Alert.alert(
-      "Evento cadastrado",
-      "Depois vamos salvar esse novo evento usando Axios e json-server.",
-      [
-        {
-          text: "OK",
-          onPress: () => navigation.goBack(),
-        },
-      ],
-    );
+    if (numeros.length <= 4) {
+      return `${numeros.slice(0, 2)}/${numeros.slice(2)}`;
+    }
+
+    return `${numeros.slice(0, 2)}/${numeros.slice(2, 4)}/${numeros.slice(4, 8)}`;
+  }
+
+  function formatarInputHora(texto) {
+    const numeros = texto.replace(/\D/g, "");
+
+    if (numeros.length <= 2) {
+      return numeros;
+    }
+
+    return `${numeros.slice(0, 2)}:${numeros.slice(2, 4)}`;
   }
 
   return (
@@ -150,19 +224,25 @@ export default function EventFormScreen({ navigation, route }) {
         </View>
 
         <TouchableOpacity style={styles.uploadBox} onPress={selecionarImagem}>
-          <View style={styles.uploadIconBox}>
-            <ImagePlus size={34} color={colors.white} />
-          </View>
+          {imagem ? (
+            <Image source={{ uri: imagem.uri }} style={styles.previewImage} />
+          ) : (
+            <>
+              <View style={styles.uploadIconBox}>
+                <ImagePlus size={34} color={colors.white} />
+              </View>
 
-          <Text style={styles.uploadTitle}>
-            {modoEdicao ? "Alterar imagem" : "Selecionar imagem"}
-          </Text>
+              <Text style={styles.uploadTitle}>
+                {modoEdicao ? "Alterar imagem" : "Selecionar imagem"}
+              </Text>
 
-          <Text style={styles.uploadText}>
-            {modoEdicao
-              ? "Toque para escolher uma nova imagem do evento"
-              : "Toque para escolher uma imagem do evento"}
-          </Text>
+              <Text style={styles.uploadText}>
+                {modoEdicao
+                  ? "Toque para escolher uma nova imagem do evento"
+                  : "Toque para escolher uma imagem do evento"}
+              </Text>
+            </>
+          )}
         </TouchableOpacity>
 
         <View style={styles.form}>
@@ -203,41 +283,73 @@ export default function EventFormScreen({ navigation, route }) {
             <View style={styles.halfInput}>
               <Text style={styles.label}>Data</Text>
 
-              <TouchableOpacity
-                style={styles.inputBox}
-                onPress={() => setMostrarCalendario(true)}
-                activeOpacity={0.8}
-              >
-                <CalendarDays size={18} color={colors.textMuted} />
+              {isWeb ? (
+                <View style={styles.inputBox}>
+                  <View style={styles.iconContainer}>
+                    <CalendarDays size={iconSize} color={colors.textMuted} />
+                  </View>
 
-                <Text
-                  style={[styles.inputText, !data && styles.placeholderText]}
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 15/09/2026"
+                    placeholderTextColor={colors.textMuted}
+                    value={data}
+                    onChangeText={(texto) => setData(formatarInputData(texto))}
+                  />
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.inputBox}
+                  onPress={() => setMostrarCalendario(true)}
+                  activeOpacity={0.8}
                 >
-                  {data || "Selecionar data"}
-                </Text>
-              </TouchableOpacity>
+                  <CalendarDays size={iconSize} color={colors.textMuted} />
+
+                  <Text
+                    style={[styles.inputText, !data && styles.placeholderText]}
+                  >
+                    {data || "Selecionar data"}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={styles.halfInput}>
               <Text style={styles.label}>Hora</Text>
 
-              <TouchableOpacity
-                style={styles.inputBox}
-                onPress={() => setMostrarRelogio(true)}
-                activeOpacity={0.8}
-              >
-                <Clock size={18} color={colors.textMuted} />
+              {isWeb ? (
+                <View style={styles.inputBox}>
+                  <View style={styles.iconContainer}>
+                    <Clock size={iconSize} color={colors.textMuted} />
+                  </View>
 
-                <Text
-                  style={[styles.inputText, !hora && styles.placeholderText]}
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Ex: 19:00"
+                    placeholderTextColor={colors.textMuted}
+                    value={hora}
+                    onChangeText={(texto) => setHora(formatarInputHora(texto))}
+                  />
+                </View>
+              ) : (
+                <TouchableOpacity
+                  style={styles.inputBox}
+                  onPress={() => setMostrarRelogio(true)}
+                  activeOpacity={0.8}
                 >
-                  {hora || "Selecionar hora"}
-                </Text>
-              </TouchableOpacity>
+                  <Clock size={iconSize} color={colors.textMuted} />
+
+                  <Text
+                    style={[styles.inputText, !hora && styles.placeholderText]}
+                  >
+                    {hora || "Selecionar hora"}
+                  </Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
 
-          {mostrarCalendario && (
+          {!isWeb && mostrarCalendario && (
             <DateTimePicker
               value={dataSelecionada}
               mode="date"
@@ -246,7 +358,7 @@ export default function EventFormScreen({ navigation, route }) {
             />
           )}
 
-          {mostrarRelogio && (
+          {!isWeb && mostrarRelogio && (
             <DateTimePicker
               value={horaSelecionada}
               mode="time"
@@ -269,9 +381,13 @@ export default function EventFormScreen({ navigation, route }) {
           </View>
 
           <TouchableOpacity style={styles.saveButton} onPress={salvarEvento}>
-            <Text style={styles.saveButtonText}>
-              {modoEdicao ? "Atualizar Evento" : "Salvar Evento"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.saveButtonText}>
+                {modoEdicao ? "Atualizar Evento" : "Salvar Evento"}
+              </Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -422,6 +538,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.white,
     marginLeft: 10,
+    height: "100%",
+    paddingVertical: 0,
+  },
+
+  iconContainer: {
+    width: 24,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   textAreaBox: {
@@ -473,5 +597,10 @@ const styles = StyleSheet.create({
     color: colors.white,
     fontSize: 15,
     fontWeight: "bold",
+  },
+  previewImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 24,
   },
 });

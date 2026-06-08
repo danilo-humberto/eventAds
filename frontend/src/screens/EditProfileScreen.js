@@ -1,49 +1,141 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  TextInput,
-  Alert,
-} from "react-native";
+import { useCallback, useState } from "react";
 
 import {
-  ArrowLeft,
-  Camera,
-  UserRound,
-  Mail,
-  GraduationCap,
-  Building2,
-  Save,
-} from "lucide-react-native";
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+import { useFocusEffect } from "@react-navigation/native";
+
+import { ArrowLeft, Camera, Mail, Save, UserRound } from "lucide-react-native";
 
 import { colors } from "../styles/colors";
 
-export default function EditProfileScreen({ navigation }) {
-  const [nome, setNome] = useState("João Silva");
-  const [email, setEmail] = useState("joaosilva@email.com");
+import { auth } from "../services/firebaseConfig";
 
-  function alterarFoto() {
-    Alert.alert(
-      "Alterar foto",
-      "Depois vamos ligar essa ação ao upload de imagem.",
-    );
+import api from "../services/api";
+
+import { pickImage, uploadImage } from "../services/cloudinaryConfig";
+
+export default function EditProfileScreen({ navigation }) {
+  const [usuarioId, setUsuarioId] = useState(null);
+
+  const [nome, setNome] = useState("");
+
+  const [email, setEmail] = useState("");
+
+  const [foto, setFoto] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+
+  const [saving, setSaving] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      carregarUsuario();
+    }, []),
+  );
+
+  async function carregarUsuario() {
+    try {
+      const firebaseUser = auth.currentUser;
+
+      if (!firebaseUser) {
+        return;
+      }
+
+      const response = await api.get(`/users?firebaseId=${firebaseUser.uid}`);
+
+      const user = response.data[0];
+
+      if (!user) {
+        return;
+      }
+
+      setUsuarioId(user.id);
+
+      setNome(user.nome);
+
+      setEmail(user.email);
+
+      setFoto(
+        user.foto
+          ? {
+              uri: user.foto,
+            }
+          : null,
+      );
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", "Não foi possível carregar o perfil.");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function salvarPerfil() {
-    Alert.alert(
-      "Perfil atualizado",
-      "Dados do perfil atualizados com sucesso.",
-      [
-        {
-          text: "OK",
-          onPress: () => navigation.goBack(),
-        },
-      ],
+  async function alterarFoto() {
+    try {
+      const image = await pickImage();
+
+      if (!image) {
+        return;
+      }
+
+      setFoto(image);
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", "Não foi possível selecionar a imagem.");
+    }
+  }
+
+  async function salvarPerfil() {
+    try {
+      if (!nome || !email) {
+        return Alert.alert("Erro", "Preencha todos os campos.");
+      }
+
+      setSaving(true);
+
+      let imageUrl = foto?.uri || null;
+
+      if (foto && foto.uri && !foto.uri.startsWith("https")) {
+        const uploadedImage = await uploadImage(foto);
+
+        imageUrl = uploadedImage.secure_url;
+      }
+
+      await api.patch(`/users/${usuarioId}`, {
+        nome,
+        email,
+        foto: imageUrl,
+      });
+
+      navigation.goBack();
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", "Não foi possível atualizar o perfil.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
     );
   }
 
@@ -56,6 +148,7 @@ export default function EditProfileScreen({ navigation }) {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.circleTop} />
+
         <View style={styles.circleBottom} />
 
         <View style={styles.header}>
@@ -74,7 +167,11 @@ export default function EditProfileScreen({ navigation }) {
         <View style={styles.profilePhotoCard}>
           <TouchableOpacity style={styles.avatarArea} onPress={alterarFoto}>
             <View style={styles.avatar}>
-              <UserRound size={52} color={colors.white} strokeWidth={2.1} />
+              {foto?.uri ? (
+                <Image source={{ uri: foto.uri }} style={styles.avatarImage} />
+              ) : (
+                <UserRound size={52} color={colors.white} strokeWidth={2.1} />
+              )}
             </View>
 
             <View style={styles.cameraBadge}>
@@ -83,6 +180,7 @@ export default function EditProfileScreen({ navigation }) {
           </TouchableOpacity>
 
           <Text style={styles.photoTitle}>Foto de perfil</Text>
+
           <Text style={styles.photoText}>
             Toque na imagem para alterar sua foto.
           </Text>
@@ -119,9 +217,16 @@ export default function EditProfileScreen({ navigation }) {
             />
           </View>
 
-          <TouchableOpacity style={styles.saveButton} onPress={salvarPerfil}>
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={salvarPerfil}
+            disabled={saving}
+          >
             <Save size={18} color={colors.white} />
-            <Text style={styles.saveButtonText}>Salvar alterações</Text>
+
+            <Text style={styles.saveButtonText}>
+              {saving ? "Salvando..." : "Salvar alterações"}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -140,6 +245,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   scrollContent: {
@@ -223,6 +335,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 54,
   },
 
   cameraBadge: {

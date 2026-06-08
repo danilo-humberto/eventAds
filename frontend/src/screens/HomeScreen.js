@@ -1,28 +1,63 @@
-import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
+  ActivityIndicator,
   Alert,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+import { useCallback, useState } from "react";
 
 import {
   Bell,
   CalendarDays,
   Clock,
+  ListChecks,
   MapPin,
   Plus,
-  ListChecks,
   Sparkles,
 } from "lucide-react-native";
 
+import { useFocusEffect } from "@react-navigation/native";
+
 import { colors } from "../styles/colors";
 
+import { auth } from "../services/firebaseConfig";
+
+import api from "../services/api";
+
 export default function HomeScreen({ navigation }) {
+  const [usuario, setUsuario] = useState(null);
+  const [loading, setLoading] = useState(true);
+  useFocusEffect(
+    useCallback(() => {
+      carregarUsuario();
+    }, []),
+  );
+
+  async function carregarUsuario() {
+    try {
+      const firebaseUser = auth.currentUser;
+
+      if (!firebaseUser) {
+        return;
+      }
+
+      const response = await api.get(`/users?firebaseId=${firebaseUser.uid}`);
+
+      setUsuario(response.data[0]);
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", "Não foi possível carregar os dados do usuário.");
+    } finally {
+      setLoading(false);
+    }
+  }
   function novoEvento() {
     navigation.navigate("EventForm");
   }
@@ -35,6 +70,14 @@ export default function HomeScreen({ navigation }) {
     Alert.alert(
       "Notificações",
       "Aqui ficarão os avisos dos eventos cadastrados.",
+    );
+  }
+
+  if (loading) {
+    return (
+      <View style={{ backgroundColor: colors.background, flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
     );
   }
 
@@ -51,7 +94,9 @@ export default function HomeScreen({ navigation }) {
 
         <View style={styles.header}>
           <View>
-            <Text style={styles.greeting}>Olá, João Silva 👋</Text>
+            <Text style={styles.greeting}>
+              Olá, {usuario?.nome || "Usuário"} 👋
+            </Text>
             <Text style={styles.welcome}>Seja bem-vindo ao EventADS</Text>
           </View>
 

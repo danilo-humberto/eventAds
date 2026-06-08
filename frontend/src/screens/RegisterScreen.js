@@ -1,28 +1,33 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
-  View,
-  Text,
+  Alert,
+  Image,
+  KeyboardAvoidingView,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
   StyleSheet,
+  Text,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  Alert,
+  View,
 } from "react-native";
 
 import {
   ArrowLeft,
   Camera,
-  UserRound,
-  Mail,
-  LockKeyhole,
   Eye,
   EyeOff,
+  LockKeyhole,
+  Mail,
+  UserRound,
 } from "lucide-react-native";
 
+import { pickImage, uploadImage } from "../services/cloudinaryConfig";
+
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import api from "../services/api";
+import { auth } from "../services/firebaseConfig";
 import { colors } from "../styles/colors";
 
 export default function RegisterScreen({ navigation }) {
@@ -32,29 +37,89 @@ export default function RegisterScreen({ navigation }) {
   const [confirmarSenha, setConfirmarSenha] = useState("");
   const [mostrarSenha, setMostrarSenha] = useState(false);
   const [mostrarConfirmarSenha, setMostrarConfirmarSenha] = useState(false);
+  const [carregando, setCarregando] = useState(false);
+  const [foto, setFoto] = useState(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
-  function cadastrarUsuario() {
-    Alert.alert("Cadastro", "Depois vamos conectar esse cadastro ao Firebase.");
+  async function cadastrarUsuario() {
+    try {
+      if (!nome || !email || !senha || !confirmarSenha) {
+        return Alert.alert("Erro", "Preencha todos os campos.");
+      }
+
+      if (senha !== confirmarSenha) {
+        return Alert.alert("Erro", "As senhas não coincidem.");
+      }
+
+      setCarregando(true);
+      const userCredential = await createUserWithEmailAndPassword(
+        auth,
+        email,
+        senha,
+      );
+
+      const usuarioFirebase = userCredential.user;
+
+      let imageUrl = null;
+
+      if (foto) {
+        const uploadedImage = await uploadImage(foto);
+
+        imageUrl = uploadedImage.secure_url;
+      }
+
+      await api.post(`/users`, {
+        firebaseId: usuarioFirebase.uid,
+        nome,
+        email,
+        foto: imageUrl,
+      });
+
+      Alert.alert("Sucesso", "Usuário cadastrado com sucesso!");
+
+      navigation.goBack();
+    } catch (error) {
+      console.log(error);
+      setCarregando(false);
+
+      if (error.code === "auth/email-already-in-use") {
+        Alert.alert("Erro", "Esse e-mail já está em uso.");
+      } else if (error.code === "auth/weak-password") {
+        Alert.alert("Erro", "A senha precisa ter pelo menos 6 caracteres.");
+      } else if (error.code === "auth/invalid-email") {
+        Alert.alert("Erro", "E-mail inválido.");
+      } else {
+        Alert.alert("Erro", "Não foi possível cadastrar.");
+      }
+    }
   }
 
-  function adicionarFoto() {
-    Alert.alert(
-      "Foto de perfil",
-      "Depois vamos usar upload de imagem nessa área.",
-    );
+  async function adicionarFoto() {
+    try {
+      const photo = await pickImage();
+
+      if (!photo) return;
+
+      setUploadingImage(true);
+
+      setFoto(photo);
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", error.message);
+    } finally {
+      setUploadingImage(false);
+    }
   }
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
-      <KeyboardAvoidingView
-        style={styles.keyboardArea}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={"padding"}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
           <View style={styles.circleTop} />
           <View style={styles.circleBottom} />
@@ -75,10 +140,23 @@ export default function RegisterScreen({ navigation }) {
 
             <TouchableOpacity style={styles.photoArea} onPress={adicionarFoto}>
               <View style={styles.photoCircle}>
-                <Camera size={34} color={colors.white} strokeWidth={2.2} />
+                {foto ? (
+                  <Image
+                    source={{ uri: foto.uri }}
+                    style={styles.photoImage}
+                  />
+                ) : (
+                  <Camera size={34} color={colors.white} strokeWidth={2.2} />
+                )}
               </View>
 
-              <Text style={styles.photoText}>Adicionar foto</Text>
+              <Text style={styles.photoText}>
+                {uploadingImage
+                  ? "Enviando..."
+                  : foto
+                    ? "Alterar foto"
+                    : "Adicionar foto"}
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -165,7 +243,9 @@ export default function RegisterScreen({ navigation }) {
               style={styles.registerButton}
               onPress={cadastrarUsuario}
             >
-              <Text style={styles.registerButtonText}>Cadastrar</Text>
+              <Text style={styles.registerButtonText}>
+                {carregando ? "Cadastrando..." : "Cadastrar"}
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.loginArea}>
@@ -188,16 +268,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
-  keyboardArea: {
-    flex: 1,
-  },
-
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 36,
     paddingBottom: 28,
-    justifyContent: "center",
   },
 
   circleTop: {
@@ -268,6 +343,12 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
+  },
+
+  photoImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 43,
   },
 
   photoText: {

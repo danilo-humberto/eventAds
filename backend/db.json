@@ -1,0 +1,41 @@
+{
+  "users": [
+    {
+      "firebaseId": "PuWhPBenfURuBVLAoSuL6k0O6HJ2",
+      "nome": "Danilo Humberto",
+      "email": "danilo@gmail.com",
+      "id": "Uo0gWkcQzDc",
+      "foto": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780961817/v89p79zqbgwq7ecxh6sq.png"
+    },
+    {
+      "firebaseId": "5fgoNX0rjYhuRdHKoEG53px2cdS2",
+      "nome": "Teste 7",
+      "email": "teste@gmail.com",
+      "foto": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780959292/te3nf9gw6mfuuqjsduam.jpg",
+      "id": "P78TyxGigWg"
+    }
+  ],
+  "events": [
+    {
+      "titulo": "akatsuki",
+      "descricao": "clã",
+      "data": "07/10/2026",
+      "hora": "20:00",
+      "local": "aldeia",
+      "imagem": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780962868/llyhcb3ofvxeklu6czom.jpg",
+      "createdAt": "2026-06-08T23:54:28.465Z",
+      "id": "y0OT0zu4z7U"
+    },
+    {
+      "titulo": "akatsuki",
+      "descricao": "clã",
+      "data": "07/10/2026",
+      "hora": "20:00",
+      "local": "aldeia",
+      "imagem": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780962868/llyhcb3ofvxeklu6czom.jpg",
+      "createdAt": "2026-06-08T23:54:28.465Z",
+      "id": "b4mRaTHwsS4"
+    }
+  ],
+  "$schema": "./node_modules/json-server/schema.json"
+}

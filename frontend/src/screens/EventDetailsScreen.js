@@ -1,13 +1,12 @@
-import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+  Image,
   SafeAreaView,
-  StatusBar,
   ScrollView,
-  Alert,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View
 } from "react-native";
 
 import {
@@ -15,12 +14,13 @@ import {
   CalendarDays,
   Clock,
   MapPin,
-  Tag,
   Pencil,
-  Trash2,
   Sparkles,
+  Tag,
+  Trash2,
 } from "lucide-react-native";
 
+import api from "../services/api";
 import { colors } from "../styles/colors";
 
 export default function EventDetailsScreen({ navigation, route }) {
@@ -38,22 +38,24 @@ export default function EventDetailsScreen({ navigation, route }) {
     navigation.navigate("EventForm", { evento });
   }
 
-  function excluirEvento() {
-    Alert.alert(
-      "Excluir evento",
-      "Tem certeza que deseja excluir este evento?",
-      [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: () => navigation.goBack(),
-        },
-      ],
-    );
+  async function confirmarExclusao(evento) {
+    const confirmado = window.confirm(`Deseja excluir "${evento.titulo}"?`);
+
+    if (!confirmado) {
+      return;
+    }
+
+    try {
+      await api.delete(`/events/${evento.id}`);
+
+      window.alert("Evento excluído com sucesso.");
+
+      navigation.goBack();
+    } catch (error) {
+      console.log(error);
+
+      window.alert("Não foi possível excluir o evento.");
+    }
   }
 
   return (
@@ -81,9 +83,17 @@ export default function EventDetailsScreen({ navigation, route }) {
         </View>
 
         <View style={styles.heroCard}>
-          <View style={styles.heroIconBox}>
-            <Sparkles size={44} color={colors.white} strokeWidth={2.2} />
-          </View>
+          {evento.imagem ? (
+            <Image
+              source={{ uri: evento.imagem }}
+              style={styles.heroImage}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={styles.heroIconBox}>
+              <Sparkles size={44} color={colors.white} strokeWidth={2.2} />
+            </View>
+          )}
 
           <View style={styles.heroTextArea}>
             <Text style={styles.heroLabel}>EVENTADS</Text>
@@ -157,7 +167,7 @@ export default function EventDetailsScreen({ navigation, route }) {
 
             <TouchableOpacity
               style={styles.deleteButton}
-              onPress={excluirEvento}
+              onPress={() => confirmarExclusao(evento)}
             >
               <Trash2 size={17} color={colors.white} />
               <Text style={styles.deleteButtonText}>Excluir</Text>
@@ -243,6 +253,13 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 22,
     overflow: "hidden",
+  },
+
+  heroImage: {
+    width: 82,
+    height: 82,
+    borderRadius: 26,
+    marginRight: 18,
   },
 
   heroIconBox: {

@@ -1,29 +1,71 @@
-import React from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  ScrollView,
-  Alert,
-} from "react-native";
+import { useCallback, useState } from "react";
 
 import {
-  UserRound,
-  Pencil,
+  ActivityIndicator,
+  Alert,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+
+import { useFocusEffect } from "@react-navigation/native";
+
+import {
   CalendarDays,
-  Bell,
-  LockKeyhole,
-  LogOut,
   ChevronRight,
+  LogOut,
+  Pencil,
   ShieldCheck,
+  UserRound,
 } from "lucide-react-native";
 
 import { colors } from "../styles/colors";
 
+import { auth } from "../services/firebaseConfig";
+
+import api from "../services/api";
+
 export default function ProfileScreen({ navigation }) {
+  const [usuario, setUsuario] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      carregarUsuario();
+    }, [])
+  );
+
+  async function carregarUsuario() {
+    try {
+      const firebaseUser = auth.currentUser;
+
+      if (!firebaseUser) {
+        return;
+      }
+
+      const response = await api.get(
+        `/users?firebaseId=${firebaseUser.uid}`
+      );
+
+      setUsuario(response.data[0]);
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert(
+        "Erro",
+        "Não foi possível carregar os dados do usuário."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function editarPerfil() {
     navigation.navigate("EditProfile");
   }
@@ -31,7 +73,7 @@ export default function ProfileScreen({ navigation }) {
   function meusEventos() {
     Alert.alert(
       "Meus eventos",
-      "Depois vamos filtrar os eventos cadastrados pelo usuário.",
+      "Depois vamos filtrar os eventos cadastrados pelo usuário."
     );
   }
 
@@ -39,9 +81,23 @@ export default function ProfileScreen({ navigation }) {
     navigation.navigate("LogoutConfirm");
   }
 
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator
+          size="large"
+          color={colors.primary}
+        />
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor={colors.background} />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor={colors.background}
+      />
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
@@ -53,62 +109,120 @@ export default function ProfileScreen({ navigation }) {
         <View style={styles.header}>
           <View style={styles.headerSpace} />
 
-          <Text style={styles.headerTitle}>Meu Perfil</Text>
+          <Text style={styles.headerTitle}>
+            Meu Perfil
+          </Text>
 
           <TouchableOpacity
             style={styles.editHeaderButton}
             onPress={editarPerfil}
           >
-            <Pencil size={19} color={colors.white} />
+            <Pencil
+              size={19}
+              color={colors.white}
+            />
           </TouchableOpacity>
         </View>
 
         <View style={styles.profileCard}>
           <View style={styles.avatarArea}>
             <View style={styles.avatar}>
-              <UserRound size={48} color={colors.white} strokeWidth={2.1} />
+              {usuario?.foto ? (
+                <Image
+                  source={{ uri: usuario.foto }}
+                  style={styles.avatarImage}
+                />
+              ) : (
+                <UserRound
+                  size={48}
+                  color={colors.white}
+                  strokeWidth={2.1}
+                />
+              )}
             </View>
 
             <View style={styles.verifiedBadge}>
-              <ShieldCheck size={17} color={colors.white} strokeWidth={2.4} />
+              <ShieldCheck
+                size={17}
+                color={colors.white}
+                strokeWidth={2.4}
+              />
             </View>
           </View>
 
-          <Text style={styles.userName}>João Silva</Text>
-          <Text style={styles.userEmail}>joaosilva@email.com</Text>
+          <Text style={styles.userName}>
+            {usuario?.nome || "Usuário"}
+          </Text>
+
+          <Text style={styles.userEmail}>
+            {usuario?.email || "Sem e-mail"}
+          </Text>
         </View>
 
         <View style={styles.menuCard}>
-          <TouchableOpacity style={styles.menuItem} onPress={meusEventos}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={meusEventos}
+          >
             <View style={styles.menuLeft}>
               <View style={styles.menuIconBox}>
-                <CalendarDays size={21} color="#93C5FD" />
+                <CalendarDays
+                  size={21}
+                  color="#93C5FD"
+                />
               </View>
 
               <View>
-                <Text style={styles.menuTitle}>Meus Eventos</Text>
-                <Text style={styles.menuSubtitle}>12 eventos cadastrados</Text>
+                <Text style={styles.menuTitle}>
+                  Meus Eventos
+                </Text>
+
+                <Text style={styles.menuSubtitle}>
+                  12 eventos cadastrados
+                </Text>
               </View>
             </View>
 
-            <ChevronRight size={21} color={colors.textMuted} />
+            <ChevronRight
+              size={21}
+              color={colors.textMuted}
+            />
           </TouchableOpacity>
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.menuItem} onPress={sairDaConta}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={sairDaConta}
+          >
             <View style={styles.menuLeft}>
-              <View style={[styles.menuIconBox, styles.logoutIconBox]}>
-                <LogOut size={21} color={colors.danger} />
+              <View
+                style={[
+                  styles.menuIconBox,
+                  styles.logoutIconBox,
+                ]}
+              >
+                <LogOut
+                  size={21}
+                  color={colors.danger}
+                />
               </View>
 
               <View>
-                <Text style={styles.logoutTitle}>Sair da Conta</Text>
-                <Text style={styles.menuSubtitle}>Encerrar sessão atual</Text>
+                <Text style={styles.logoutTitle}>
+                  Sair da Conta
+                </Text>
+
+                <Text style={styles.menuSubtitle}>
+                  Encerrar sessão atual
+                </Text>
               </View>
             </View>
 
-            <ChevronRight size={21} color={colors.textMuted} />
+            <ChevronRight
+              size={21}
+              color={colors.textMuted}
+            />
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -120,6 +234,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+
+  loadingContainer: {
+    flex: 1,
+    backgroundColor: colors.background,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   scrollContent: {
@@ -203,6 +324,13 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 52,
   },
 
   verifiedBadge: {
