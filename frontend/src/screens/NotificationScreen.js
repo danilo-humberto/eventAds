@@ -1,61 +1,136 @@
-import React from "react";
+import React, { useCallback, useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
   SafeAreaView,
-  StatusBar,
   ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
+
+import { useFocusEffect } from "@react-navigation/native";
 
 import {
   Bell,
   CalendarPlus,
+  Clock,
+  PartyPopper,
   RefreshCcw,
   Trash2,
-  PartyPopper,
-  Clock,
 } from "lucide-react-native";
 
+import {
+  clearStoredNotifications,
+  getStoredNotifications,
+  removeStoredNotification,
+} from "../services/notificationStorage";
 import { colors } from "../styles/colors";
 
-const notificacoesMock = [
-  {
-    id: 1,
-    titulo: "Novo evento cadastrado!",
-    mensagem: "Workshop de React Native foi adicionado.",
-    detalhe: "15/09/2026 às 19h no Auditório IFPE.",
-    tempo: "Agora",
-    tipo: "novo",
-  },
-  {
-    id: 2,
-    titulo: "Evento atualizado",
-    mensagem: "Palestra de IA foi atualizada.",
-    detalhe: "As informações do evento foram modificadas.",
-    tempo: "10 min atrás",
-    tipo: "atualizado",
-  },
-  {
-    id: 3,
-    titulo: "Lembrete de evento",
-    mensagem: "Semana de ADS 2026 começa hoje!",
-    detalhe: "14h00 no Campus Recife.",
-    tempo: "1 dia atrás",
-    tipo: "lembrete",
-  },
-  {
-    id: 4,
-    titulo: "Novo evento cadastrado!",
-    mensagem: "Palestra de Cibersegurança adicionada.",
-    detalhe: "22/09/2026 às 18h.",
-    tempo: "2 dias atrás",
-    tipo: "novo",
-  },
-];
+function formatarTempo(createdAt) {
+  const createdDate = new Date(createdAt);
+
+  if (Number.isNaN(createdDate.getTime())) {
+    return "Agora";
+  }
+
+  const diffMinutes = Math.max(
+    0,
+    Math.floor((Date.now() - createdDate.getTime()) / 60000),
+  );
+
+  if (diffMinutes < 1) {
+    return "Agora";
+  }
+
+  if (diffMinutes < 60) {
+    return diffMinutes === 1 ? "1 min atrás" : `${diffMinutes} min atrás`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return diffHours === 1 ? "1 hora atrás" : `${diffHours} horas atrás`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+
+  return diffDays === 1 ? "1 dia atrás" : `${diffDays} dias atrás`;
+}
 
 export default function NotificationScreen() {
+  const [notificacoes, setNotificacoes] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useFocusEffect(
+    useCallback(() => {
+      carregarNotificacoes();
+    }, []),
+  );
+
+  async function carregarNotificacoes() {
+    try {
+      setLoading(true);
+
+      const storedNotifications = await getStoredNotifications();
+
+      setNotificacoes(storedNotifications);
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", "Não foi possível carregar as notificações.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function apagarNotificacao(notificationId) {
+    try {
+      const updatedNotifications =
+        await removeStoredNotification(notificationId);
+
+      setNotificacoes(updatedNotifications);
+    } catch (error) {
+      console.log(error);
+
+      Alert.alert("Erro", "Não foi possível apagar a notificação.");
+    }
+  }
+
+  function limparNotificacoes() {
+    if (notificacoes.length === 0) {
+      return;
+    }
+
+    Alert.alert(
+      "Limpar notificações",
+      "Deseja remover todas as notificações salvas?",
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Limpar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const updatedNotifications = await clearStoredNotifications();
+
+              setNotificacoes(updatedNotifications);
+            } catch (error) {
+              console.log(error);
+
+              Alert.alert("Erro", "Não foi possível limpar as notificações.");
+            }
+          },
+        },
+      ],
+    );
+  }
+
   function renderIcon(tipo) {
     if (tipo === "atualizado") {
       return <RefreshCcw size={22} color={colors.white} />;
@@ -111,7 +186,7 @@ export default function NotificationScreen() {
 
           <View style={styles.summaryTextArea}>
             <Text style={styles.summaryTitle}>
-              {notificacoesMock.length} notificações
+              {notificacoes.length} notificações
             </Text>
             <Text style={styles.summaryText}>
               Eventos cadastrados, alterações e lembretes recentes.
@@ -122,33 +197,61 @@ export default function NotificationScreen() {
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Recentes</Text>
 
-          <TouchableOpacity>
-            <Text style={styles.clearText}>Limpar</Text>
+          <TouchableOpacity
+            onPress={limparNotificacoes}
+            disabled={notificacoes.length === 0}
+          >
+            <Text
+              style={[
+                styles.clearText,
+                notificacoes.length === 0 && styles.clearTextDisabled,
+              ]}
+            >
+              Limpar
+            </Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.listArea}>
-          {notificacoesMock.map((item) => (
-            <View key={item.id} style={styles.notificationCard}>
-              <View style={getIconStyle(item.tipo)}>
-                {renderIcon(item.tipo)}
-              </View>
-
-              <View style={styles.notificationContent}>
-                <View style={styles.notificationTop}>
-                  <Text style={styles.notificationTitle}>{item.titulo}</Text>
-
-                  <TouchableOpacity>
-                    <Trash2 size={16} color={colors.textMuted} />
-                  </TouchableOpacity>
+          {loading ? (
+            <View style={styles.loadingCard}>
+              <ActivityIndicator size="small" color={colors.primary} />
+              <Text style={styles.loadingText}>Carregando notificações...</Text>
+            </View>
+          ) : notificacoes.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Bell size={26} color={colors.textMuted} />
+              <Text style={styles.emptyTitle}>Nenhuma notificação </Text>
+            </View>
+          ) : (
+            notificacoes.map((item) => (
+              <View key={item.id} style={styles.notificationCard}>
+                <View style={getIconStyle(item.tipo)}>
+                  {renderIcon(item.tipo)}
                 </View>
 
-                <Text style={styles.notificationMessage}>{item.mensagem}</Text>
-                <Text style={styles.notificationDetail}>{item.detalhe}</Text>
-                <Text style={styles.notificationTime}>{item.tempo}</Text>
+                <View style={styles.notificationContent}>
+                  <View style={styles.notificationTop}>
+                    <Text style={styles.notificationTitle}>{item.titulo}</Text>
+
+                    <TouchableOpacity
+                      onPress={() => apagarNotificacao(item.id)}
+                    >
+                      <Trash2 size={16} color={colors.textMuted} />
+                    </TouchableOpacity>
+                  </View>
+
+                  <Text style={styles.notificationMessage}>
+                    {item.mensagem}
+                  </Text>
+                  <Text style={styles.notificationDetail}>{item.detalhe}</Text>
+                  <Text style={styles.notificationTime}>
+                    {item.tempo || formatarTempo(item.createdAt)}
+                  </Text>
+                </View>
               </View>
-            </View>
-          ))}
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -277,8 +380,52 @@ const styles = StyleSheet.create({
     color: "#93C5FD",
   },
 
+  clearTextDisabled: {
+    color: colors.textMuted,
+  },
+
   listArea: {
     gap: 14,
+  },
+
+  loadingCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    padding: 22,
+    alignItems: "center",
+  },
+
+  loadingText: {
+    marginTop: 10,
+    fontSize: 12,
+    color: colors.textSoft,
+  },
+
+  emptyCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    padding: 22,
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 15,
+    fontWeight: "bold",
+    color: colors.white,
+    textAlign: "center",
+  },
+
+  emptyText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: colors.textSoft,
+    textAlign: "center",
+    lineHeight: 18,
   },
 
   notificationCard: {

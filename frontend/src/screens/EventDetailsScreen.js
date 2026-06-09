@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 
 import {
@@ -17,11 +17,11 @@ import {
   MapPin,
   Pencil,
   Sparkles,
-  Tag,
   Trash2,
 } from "lucide-react-native";
 
 import api from "../services/api";
+import { auth } from "../services/firebaseConfig";
 import { colors } from "../styles/colors";
 
 export default function EventDetailsScreen({ navigation, route }) {
@@ -30,17 +30,28 @@ export default function EventDetailsScreen({ navigation, route }) {
     data: "15/09/2026",
     hora: "19h00",
     local: "Auditório IFPE",
-    tipo: "Workshop",
     descricao:
       "Aprenda a desenvolver aplicativos móveis utilizando React Native e Expo. O workshop abordará desde a instalação do ambiente até a publicação do aplicativo.",
   };
 
   function editarEvento() {
+    if (!usuarioPodeGerenciar()) {
+      Alert.alert("Permissao negada", "Apenas o criador pode editar este evento.");
+
+      return;
+    }
+
     navigation.navigate("EventForm", { evento });
   }
 
   async function excluirEvento(evento) {
     try {
+      if (!usuarioPodeGerenciar()) {
+        Alert.alert("Permissao negada", "Apenas o criador pode excluir este evento.");
+
+        return;
+      }
+
       await api.delete(`/events/${evento.id}`);
 
       Alert.alert("Sucesso", "Evento excluído com sucesso.", [
@@ -57,6 +68,12 @@ export default function EventDetailsScreen({ navigation, route }) {
   }
 
   function confirmarExclusao(evento) {
+    if (!usuarioPodeGerenciar()) {
+      Alert.alert("Permissao negada", "Apenas o criador pode excluir este evento.");
+
+      return;
+    }
+
     Alert.alert(
       "Excluir evento",
       `Deseja excluir "${evento.titulo}"?`,
@@ -72,6 +89,12 @@ export default function EventDetailsScreen({ navigation, route }) {
         },
       ],
     );
+  }
+
+  function usuarioPodeGerenciar() {
+    const firebaseUser = auth.currentUser;
+
+    return !!firebaseUser?.uid && evento?.userId === firebaseUser.uid;
   }
 
   return (
@@ -154,16 +177,6 @@ export default function EventDetailsScreen({ navigation, route }) {
               </View>
             </View>
 
-            <View style={styles.infoItem}>
-              <View style={styles.infoIcon}>
-                <Tag size={18} color="#93C5FD" />
-              </View>
-
-              <View>
-                <Text style={styles.infoLabel}>Categoria</Text>
-                <Text style={styles.infoText}>{evento.tipo}</Text>
-              </View>
-            </View>
           </View>
 
           <View style={styles.descriptionArea}>
@@ -175,20 +188,22 @@ export default function EventDetailsScreen({ navigation, route }) {
             </Text>
           </View>
 
-          <View style={styles.actionsRow}>
-            <TouchableOpacity style={styles.editButton} onPress={editarEvento}>
-              <Pencil size={17} color={colors.white} />
-              <Text style={styles.editButtonText}>Editar</Text>
-            </TouchableOpacity>
+          {usuarioPodeGerenciar() && (
+            <View style={styles.actionsRow}>
+              <TouchableOpacity style={styles.editButton} onPress={editarEvento}>
+                <Pencil size={17} color={colors.white} />
+                <Text style={styles.editButtonText}>Editar</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={() => confirmarExclusao(evento)}
-            >
-              <Trash2 size={17} color={colors.white} />
-              <Text style={styles.deleteButtonText}>Excluir</Text>
-            </TouchableOpacity>
-          </View>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => confirmarExclusao(evento)}
+              >
+                <Trash2 size={17} color={colors.white} />
+                <Text style={styles.deleteButtonText}>Excluir</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -80,12 +80,30 @@ export default function EventListScreen({ navigation, route }) {
     }, [somenteMeusEventos]),
   );
 
+  function usuarioPodeGerenciar(evento) {
+    const firebaseUser = auth.currentUser;
+
+    return !!firebaseUser?.uid && evento?.userId === firebaseUser.uid;
+  }
+
   function editarEvento(evento) {
+    if (!usuarioPodeGerenciar(evento)) {
+      Alert.alert("Permissao negada", "Apenas o criador pode editar este evento.");
+
+      return;
+    }
+
     navigation.navigate("EventForm", { evento });
   }
 
   async function excluirEvento(evento) {
     try {
+      if (!usuarioPodeGerenciar(evento)) {
+        Alert.alert("Permissao negada", "Apenas o criador pode excluir este evento.");
+
+        return;
+      }
+
       await api.delete(`/events/${evento.id}`);
 
       setEventos((eventosAtuais) =>
@@ -101,6 +119,12 @@ export default function EventListScreen({ navigation, route }) {
   }
 
   function confirmarExclusao(evento) {
+    if (!usuarioPodeGerenciar(evento)) {
+      Alert.alert("Permissao negada", "Apenas o criador pode excluir este evento.");
+
+      return;
+    }
+
     Alert.alert(
       "Excluir evento",
       `Deseja excluir "${evento.titulo}"?`,
@@ -243,23 +267,25 @@ export default function EventListScreen({ navigation, route }) {
                   <Text style={styles.eventInfoText}>{evento.local}</Text>
                 </View>
 
-                <View style={styles.actionsRow}>
-                  <TouchableOpacity
-                    style={styles.editButton}
-                    onPress={() => editarEvento(evento)}
-                  >
-                    <Pencil size={13} color={colors.white} />
-                    <Text style={styles.actionButtonText}>Editar</Text>
-                  </TouchableOpacity>
+                {usuarioPodeGerenciar(evento) && (
+                  <View style={styles.actionsRow}>
+                    <TouchableOpacity
+                      style={styles.editButton}
+                      onPress={() => editarEvento(evento)}
+                    >
+                      <Pencil size={13} color={colors.white} />
+                      <Text style={styles.actionButtonText}>Editar</Text>
+                    </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={styles.deleteButton}
-                    onPress={() => confirmarExclusao(evento)}
-                  >
-                    <Trash2 size={13} color={colors.white} />
-                    <Text style={styles.actionButtonText}>Excluir</Text>
-                  </TouchableOpacity>
-                </View>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => confirmarExclusao(evento)}
+                    >
+                      <Trash2 size={13} color={colors.white} />
+                      <Text style={styles.actionButtonText}>Excluir</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
               </View>
             </TouchableOpacity>
             ))

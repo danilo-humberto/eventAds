@@ -29,6 +29,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import api from "../services/api";
 import { pickImage, uploadCompleto } from "../services/cloudinaryConfig";
 import { auth } from "../services/firebaseConfig";
+import { addStoredNotification } from "../services/notificationStorage";
 import { colors } from "../styles/colors";
 
 function formatarData(date) {
@@ -127,6 +128,12 @@ export default function EventFormScreen({ navigation, route }) {
         return;
       }
 
+      if (modoEdicao && eventoEdicao?.userId !== firebaseUser.uid) {
+        Alert.alert("Permissao negada", "Apenas o criador pode editar este evento.");
+
+        return;
+      }
+
       let imageUrl = "";
 
       if (imagem) {
@@ -166,7 +173,21 @@ export default function EventFormScreen({ navigation, route }) {
         return;
       }
 
-      await api.post("/events", novoEvento);
+      const response = await api.post("/events", novoEvento);
+      const eventoCriado = response.data || novoEvento;
+
+      try {
+        await addStoredNotification({
+          id: `${eventoCriado.id || Date.now()}-novo`,
+          tipo: "novo",
+          titulo: "Novo evento cadastrado",
+          mensagem: `${titulo} foi adicionado ao EventADS.`,
+          detalhe: `${data} às ${hora} - ${local}`,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (notificationError) {
+        console.log(notificationError);
+      }
 
       Alert.alert("Sucesso", "Evento cadastrado com sucesso.");
 

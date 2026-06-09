@@ -101,8 +101,12 @@ export default function EditProfileScreen({ navigation }) {
 
   async function salvarPerfil() {
     try {
-      if (!nome || !email) {
-        return Alert.alert("Erro", "Preencha todos os campos.");
+      if (!nome) {
+        return Alert.alert("Erro", "Preencha o nome.");
+      }
+
+      if (!usuarioId) {
+        return Alert.alert("Erro", "Perfil do usuario nao encontrado.");
       }
 
       setSaving(true);
@@ -117,7 +121,6 @@ export default function EditProfileScreen({ navigation }) {
 
       await api.patch(`/users/${usuarioId}`, {
         nome,
-        email,
         foto: imageUrl,
       });
 
@@ -203,19 +206,15 @@ export default function EditProfileScreen({ navigation }) {
 
           <Text style={styles.label}>E-mail</Text>
 
-          <View style={styles.inputBox}>
+          <View style={styles.readOnlyBox}>
             <Mail size={20} color={colors.textMuted} />
 
-            <TextInput
-              style={styles.input}
-              placeholder="Digite seu e-mail"
-              placeholderTextColor={colors.textMuted}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              value={email}
-              onChangeText={setEmail}
-            />
+            <Text style={styles.readOnlyText}>
+              {email || "E-mail nao informado"}
+            </Text>
           </View>
+
+          <Text style={styles.readOnlyHint}>campo não editável</Text>
 
           <TouchableOpacity
             style={styles.saveButton}
@@ -403,6 +402,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.white,
     marginLeft: 10,
+  },
+
+  readOnlyBox: {
+    minHeight: 52,
+    borderWidth: 1,
+    borderColor: colors.inputBorder,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.05)",
+    opacity: 0.82,
+  },
+
+  readOnlyText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textSoft,
+    marginLeft: 10,
+  },
+
+  readOnlyHint: {
+    marginTop: 7,
+    fontSize: 12,
+    color: colors.textMuted,
+    textAlign: "center",
   },
 
   saveButton: {
