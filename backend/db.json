@@ -13,6 +13,13 @@
       "email": "teste@gmail.com",
       "foto": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780959292/te3nf9gw6mfuuqjsduam.jpg",
       "id": "P78TyxGigWg"
+    },
+    {
+      "firebaseId": "HftFwLJGg7eue2PK8J5B7sMRJCn2",
+      "nome": "Danilo Melo",
+      "email": "dhpm@discente.ifpe.edu.br",
+      "foto": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1781027538/bhnaf7jvoy80kmbykodl.jpg",
+      "id": "OeURM9th0Wk"
     }
   ],
   "events": [
@@ -23,18 +30,20 @@
       "hora": "20:00",
       "local": "aldeia",
       "imagem": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780962868/llyhcb3ofvxeklu6czom.jpg",
-      "createdAt": "2026-06-08T23:54:28.465Z",
-      "id": "y0OT0zu4z7U"
-    },
-    {
-      "titulo": "akatsuki",
-      "descricao": "clã",
-      "data": "07/10/2026",
-      "hora": "20:00",
-      "local": "aldeia",
-      "imagem": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780962868/llyhcb3ofvxeklu6czom.jpg",
+      "userId": "PuWhPBenfURuBVLAoSuL6k0O6HJ2",
       "createdAt": "2026-06-08T23:54:28.465Z",
       "id": "b4mRaTHwsS4"
+    },
+    {
+      "titulo": "Teste",
+      "descricao": "Teste",
+      "data": "10/06/2026",
+      "hora": "14:32",
+      "local": "Teste",
+      "imagem": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1781026385/juel2zi5kvdbbv7njesb.jpg",
+      "userId": "PuWhPBenfURuBVLAoSuL6k0O6HJ2",
+      "createdAt": "2026-06-09T17:33:05.944Z",
+      "id": "rjyP8aXuakA"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

@@ -6,6 +6,7 @@ import {
   TextInput,
   TouchableOpacity,
   SafeAreaView,
+  ScrollView,
   StatusBar,
   KeyboardAvoidingView,
   Platform,
@@ -83,12 +84,16 @@ export default function LoginScreen({ navigation }) {
 
       <KeyboardAvoidingView
         style={styles.keyboardArea}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.circleTop} />
         <View style={styles.circleBottom} />
 
-        <View style={styles.content}>
+        <ScrollView
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.logoArea}>
             <View style={styles.logoBox}>
               <CalendarDays size={36} color={colors.white} strokeWidth={2.4} />
@@ -167,7 +172,7 @@ export default function LoginScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -206,8 +211,9 @@ const styles = StyleSheet.create({
   },
 
   content: {
-    flex: 1,
+    flexGrow: 1,
     paddingHorizontal: 24,
+    paddingVertical: 32,
     justifyContent: "center",
   },
 

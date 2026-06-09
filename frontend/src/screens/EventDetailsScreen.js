@@ -1,4 +1,5 @@
 import {
+  Alert,
   Image,
   SafeAreaView,
   ScrollView,
@@ -38,24 +39,39 @@ export default function EventDetailsScreen({ navigation, route }) {
     navigation.navigate("EventForm", { evento });
   }
 
-  async function confirmarExclusao(evento) {
-    const confirmado = window.confirm(`Deseja excluir "${evento.titulo}"?`);
-
-    if (!confirmado) {
-      return;
-    }
-
+  async function excluirEvento(evento) {
     try {
       await api.delete(`/events/${evento.id}`);
 
-      window.alert("Evento excluído com sucesso.");
-
-      navigation.goBack();
+      Alert.alert("Sucesso", "Evento excluído com sucesso.", [
+        {
+          text: "OK",
+          onPress: () => navigation.goBack(),
+        },
+      ]);
     } catch (error) {
       console.log(error);
 
-      window.alert("Não foi possível excluir o evento.");
+      Alert.alert("Erro", "Não foi possível excluir o evento.");
     }
+  }
+
+  function confirmarExclusao(evento) {
+    Alert.alert(
+      "Excluir evento",
+      `Deseja excluir "${evento.titulo}"?`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: () => excluirEvento(evento),
+        },
+      ],
+    );
   }
 
   return (

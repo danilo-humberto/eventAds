@@ -1,5 +1,6 @@
-import React from "react";
+import React, { useState } from "react";
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -8,13 +9,32 @@ import {
   StatusBar,
 } from "react-native";
 
-import { LogOut, X } from "lucide-react-native";
+import { signOut } from "firebase/auth";
+import { LogOut } from "lucide-react-native";
 
+import { auth } from "../services/firebaseConfig";
 import { colors } from "../styles/colors";
 
 export default function LogoutConfirmScreen({ navigation }) {
-  function confirmarSaida() {
-    navigation.replace("Login");
+  const [saindo, setSaindo] = useState(false);
+
+  async function confirmarSaida() {
+    try {
+      setSaindo(true);
+
+      await signOut(auth);
+
+      navigation.reset({
+        index: 0,
+        routes: [{ name: "Login" }],
+      });
+    } catch (error) {
+      console.log(error);
+
+      setSaindo(false);
+
+      Alert.alert("Erro", "Não foi possível sair da conta.");
+    }
   }
 
   function cancelar() {
@@ -43,11 +63,18 @@ export default function LogoutConfirmScreen({ navigation }) {
           <TouchableOpacity
             style={styles.logoutButton}
             onPress={confirmarSaida}
+            disabled={saindo}
           >
-            <Text style={styles.logoutButtonText}>Sair</Text>
+            <Text style={styles.logoutButtonText}>
+              {saindo ? "Saindo..." : "Sair"}
+            </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.cancelButton} onPress={cancelar}>
+          <TouchableOpacity
+            style={styles.cancelButton}
+            onPress={cancelar}
+            disabled={saindo}
+          >
             <Text style={styles.cancelButtonText}>Cancelar</Text>
           </TouchableOpacity>
         </View>

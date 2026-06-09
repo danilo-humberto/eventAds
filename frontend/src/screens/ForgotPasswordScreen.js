@@ -9,26 +9,65 @@ import {
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   Alert,
 } from "react-native";
 
 import { ArrowLeft, LockKeyhole, Mail, Send } from "lucide-react-native";
+import { sendPasswordResetEmail } from "firebase/auth";
 
+import { auth } from "../services/firebaseConfig";
 import { colors } from "../styles/colors";
 
 export default function ForgotPasswordScreen({ navigation }) {
   const [email, setEmail] = useState("");
+  const [enviando, setEnviando] = useState(false);
 
-  function enviarInstrucoes() {
-    if (!email) {
+  async function enviarInstrucoes() {
+    const emailFormatado = email.trim();
+
+    if (!emailFormatado) {
       Alert.alert("Atenção", "Digite seu e-mail para recuperar a senha.");
       return;
     }
 
-    Alert.alert(
-      "Recuperação de senha",
-      "Depois vamos enviar as instruções usando o Firebase.",
-    );
+    try {
+      setEnviando(true);
+
+      await sendPasswordResetEmail(auth, emailFormatado);
+
+      Alert.alert(
+        "E-mail enviado",
+        "Enviamos as instruções de recuperação para o e-mail informado.",
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.goBack(),
+          },
+        ],
+      );
+    } catch (error) {
+      console.log(error);
+
+      let mensagem = "Não foi possível enviar as instruções de recuperação.";
+
+      if (error.code === "auth/invalid-email") {
+        mensagem = "Digite um e-mail válido.";
+      }
+
+      if (error.code === "auth/user-not-found") {
+        mensagem = "Não encontramos uma conta com esse e-mail.";
+      }
+
+      if (error.code === "auth/network-request-failed") {
+        mensagem =
+          "Não foi possível conectar ao Firebase. Verifique sua internet e tente novamente.";
+      }
+
+      Alert.alert("Erro", mensagem);
+    } finally {
+      setEnviando(false);
+    }
   }
 
   return (
@@ -37,25 +76,30 @@ export default function ForgotPasswordScreen({ navigation }) {
 
       <KeyboardAvoidingView
         style={styles.keyboardArea}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.circleTop} />
         <View style={styles.circleBottom} />
 
-        <View style={styles.content}>
-          <View style={styles.header}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={() => navigation.goBack()}
-            >
-              <ArrowLeft size={22} color={colors.white} />
-            </TouchableOpacity>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <ArrowLeft size={22} color={colors.white} />
+          </TouchableOpacity>
 
-            <Text style={styles.headerTitle}>Recuperar Senha</Text>
+          <Text style={styles.headerTitle}>Recuperar Senha</Text>
 
-            <View style={styles.headerSpace} />
-          </View>
+          <View style={styles.headerSpace} />
+        </View>
 
+        <ScrollView
+          style={styles.scrollArea}
+          contentContainerStyle={styles.content}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.card}>
             <View style={styles.iconArea}>
               <View style={styles.iconBox}>
@@ -88,11 +132,17 @@ export default function ForgotPasswordScreen({ navigation }) {
               </View>
 
               <TouchableOpacity
-                style={styles.sendButton}
+                style={[
+                  styles.sendButton,
+                  enviando && styles.sendButtonDisabled,
+                ]}
                 onPress={enviarInstrucoes}
+                disabled={enviando}
               >
                 <Send size={18} color={colors.white} />
-                <Text style={styles.sendButtonText}>Enviar instruções</Text>
+                <Text style={styles.sendButtonText}>
+                  {enviando ? "Enviando..." : "Enviar instruções"}
+                </Text>
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -103,7 +153,7 @@ export default function ForgotPasswordScreen({ navigation }) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -141,21 +191,25 @@ const styles = StyleSheet.create({
     opacity: 0.28,
   },
 
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 36,
-    justifyContent: "center",
-  },
-
   header: {
-    position: "absolute",
-    top: 36,
-    left: 24,
-    right: 24,
+    marginTop: 45,
+    marginHorizontal: 24,
+    marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+
+  scrollArea: {
+    flex: 1,
+  },
+
+  content: {
+    flexGrow: 1,
+    paddingHorizontal: 24,
+    paddingTop: 12,
+    paddingBottom: 32,
+    justifyContent: "center",
   },
 
   backButton: {
@@ -256,6 +310,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     flexDirection: "row",
     marginTop: 24,
+  },
+
+  sendButtonDisabled: {
+    opacity: 0.65,
   },
 
   sendButtonText: {

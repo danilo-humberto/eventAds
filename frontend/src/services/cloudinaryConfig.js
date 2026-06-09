@@ -3,7 +3,7 @@ import * as ImagePicker from "expo-image-picker";
 const CLOUD_NAME = "dtjie5qfj";
 const UPLOAD_PRESET = "eventAds";
 
-const BACKEND_URL = "http://10.31.35.11:3001";
+const BACKEND_URL = "http://192.168.1.24:3001";
 
 export async function pickImage() {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -48,7 +48,7 @@ export async function uploadImage(photo) {
     {
       method: "POST",
       body: data,
-    }
+    },
   );
 
   const result = await response.json();

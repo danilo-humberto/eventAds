@@ -1,6 +1,7 @@
 import {
   ActivityIndicator,
   Alert,
+  Image,
   SafeAreaView,
   ScrollView,
   StatusBar,
@@ -29,31 +30,54 @@ import { colors } from "../styles/colors";
 import { auth } from "../services/firebaseConfig";
 
 import api from "../services/api";
+import {
+  formatarDataHoraEvento,
+  getEtiquetaProximoEvento,
+  getProximoEvento,
+} from "../helpers/eventHelpers";
 
 export default function HomeScreen({ navigation }) {
   const [usuario, setUsuario] = useState(null);
+  const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const proximoEvento = getProximoEvento(eventos);
+  const totalEventos = eventos.length;
+  const etiquetaProximoEvento = proximoEvento
+    ? getEtiquetaProximoEvento(proximoEvento)
+    : "Sem evento";
+
   useFocusEffect(
     useCallback(() => {
-      carregarUsuario();
+      carregarDadosHome();
     }, []),
   );
 
-  async function carregarUsuario() {
+  async function carregarDadosHome() {
     try {
+      setLoading(true);
+
       const firebaseUser = auth.currentUser;
 
       if (!firebaseUser) {
+        setUsuario(null);
+        setEventos([]);
+
         return;
       }
 
-      const response = await api.get(`/users?firebaseId=${firebaseUser.uid}`);
+      const [usuarioResponse, eventosResponse] = await Promise.all([
+        api.get(`/users?firebaseId=${firebaseUser.uid}`),
+        api.get("/events"),
+      ]);
 
-      setUsuario(response.data[0]);
+      setUsuario(usuarioResponse.data[0] || null);
+      setEventos(
+        Array.isArray(eventosResponse.data) ? eventosResponse.data : [],
+      );
     } catch (error) {
       console.log(error);
 
-      Alert.alert("Erro", "Não foi possível carregar os dados do usuário.");
+      Alert.alert("Erro", "Não foi possível carregar os dados da tela inicial.");
     } finally {
       setLoading(false);
     }
@@ -63,14 +87,19 @@ export default function HomeScreen({ navigation }) {
   }
 
   function verEventos() {
-    navigation.navigate("EventList");
+    navigation.navigate("Eventos");
   }
 
   function abrirNotificacoes() {
-    Alert.alert(
-      "Notificações",
-      "Aqui ficarão os avisos dos eventos cadastrados.",
-    );
+    navigation.navigate("Notificações");
+  }
+
+  function abrirProximoEvento() {
+    if (!proximoEvento) {
+      return;
+    }
+
+    navigation.navigate("EventDetails", { evento: proximoEvento });
   }
 
   if (loading) {
@@ -122,33 +151,64 @@ export default function HomeScreen({ navigation }) {
             </View>
           </View>
 
-          <Text style={styles.eventNumber}>12</Text>
-          <Text style={styles.eventLabel}>eventos ativos</Text>
+          <Text style={styles.eventNumber}>{totalEventos}</Text>
+          <Text style={styles.eventLabel}>
+            {totalEventos === 1 ? "evento cadastrado" : "eventos cadastrados"}
+          </Text>
         </View>
 
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>Próximo evento</Text>
-          <Text style={styles.sectionAction}>Hoje</Text>
+          <Text style={styles.sectionAction}>{etiquetaProximoEvento}</Text>
         </View>
 
-        <TouchableOpacity style={styles.nextEventCard}>
+        <TouchableOpacity
+          style={styles.nextEventCard}
+          onPress={abrirProximoEvento}
+          activeOpacity={proximoEvento ? 0.85 : 1}
+          disabled={!proximoEvento}
+        >
           <View style={styles.eventImage}>
-            <Sparkles size={28} color={colors.white} />
-            <Text style={styles.eventImageText}>ADS</Text>
+            {proximoEvento?.imagem ? (
+              <Image
+                source={{ uri: proximoEvento.imagem }}
+                style={styles.eventPhoto}
+                resizeMode="cover"
+              />
+            ) : (
+              <>
+                <Sparkles size={28} color={colors.white} />
+                <Text style={styles.eventImageText}>ADS</Text>
+              </>
+            )}
           </View>
 
           <View style={styles.eventInfo}>
-            <Text style={styles.eventTitle}>Workshop de React Native</Text>
+            <Text style={styles.eventTitle}>
+              {proximoEvento?.titulo || "Nenhum evento próximo"}
+            </Text>
 
-            <View style={styles.eventDetail}>
-              <Clock size={14} color={colors.textMuted} />
-              <Text style={styles.eventDetailText}>05/09/2026 às 19h</Text>
-            </View>
+            {proximoEvento ? (
+              <>
+                <View style={styles.eventDetail}>
+                  <Clock size={14} color={colors.textMuted} />
+                  <Text style={styles.eventDetailText}>
+                    {formatarDataHoraEvento(proximoEvento)}
+                  </Text>
+                </View>
 
-            <View style={styles.eventDetail}>
-              <MapPin size={14} color={colors.textMuted} />
-              <Text style={styles.eventDetailText}>Auditório IFPE</Text>
-            </View>
+                <View style={styles.eventDetail}>
+                  <MapPin size={14} color={colors.textMuted} />
+                  <Text style={styles.eventDetailText}>
+                    {proximoEvento.local || "Local não informado"}
+                  </Text>
+                </View>
+              </>
+            ) : (
+              <Text style={styles.emptyEventText}>
+                Cadastre um novo evento para ele aparecer aqui.
+              </Text>
+            )}
           </View>
         </TouchableOpacity>
 
@@ -334,6 +394,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginRight: 14,
+    overflow: "hidden",
+  },
+
+  eventPhoto: {
+    width: "100%",
+    height: "100%",
   },
 
   eventImageText: {
@@ -365,6 +431,12 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 12,
     color: colors.textSoft,
+  },
+
+  emptyEventText: {
+    fontSize: 12,
+    color: colors.textSoft,
+    lineHeight: 18,
   },
 
   actionsArea: {

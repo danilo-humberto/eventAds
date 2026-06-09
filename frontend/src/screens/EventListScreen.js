@@ -15,27 +15,54 @@ import {
 } from "react-native";
 
 import {
+  ArrowLeft,
   CalendarDays,
   Clock,
   MapPin,
-  Menu,
   Pencil,
   Search,
-  SlidersHorizontal,
   Trash2,
 } from "lucide-react-native";
 
 import api from "../services/api";
+import { auth } from "../services/firebaseConfig";
 import { colors } from "../styles/colors";
 
-export default function EventListScreen({ navigation }) {
+export default function EventListScreen({ navigation, route }) {
   const [busca, setBusca] = useState("");
   const [eventos, setEventos] = useState([]);
   const [loading, setLoading] = useState(true);
+  const somenteMeusEventos = route?.params?.somenteMeusEventos === true;
+  const eventosFiltrados = eventos.filter((evento) => {
+    const termoBusca = busca.trim().toLowerCase();
+
+    if (!termoBusca) {
+      return true;
+    }
+
+    return (
+      evento.titulo?.toLowerCase().includes(termoBusca) ||
+      evento.local?.toLowerCase().includes(termoBusca)
+    );
+  });
 
   async function carregarEventos() {
     try {
-      const response = await api.get("/events");
+      setLoading(true);
+
+      const firebaseUser = auth.currentUser;
+      const endpoint =
+        somenteMeusEventos && firebaseUser
+          ? `/events?userId=${firebaseUser.uid}`
+          : "/events";
+
+      if (somenteMeusEventos && !firebaseUser) {
+        setEventos([]);
+
+        return;
+      }
+
+      const response = await api.get(endpoint);
 
       setEventos(response.data);
     } catch (error) {
@@ -50,31 +77,45 @@ export default function EventListScreen({ navigation }) {
   useFocusEffect(
     useCallback(() => {
       carregarEventos();
-    }, []),
+    }, [somenteMeusEventos]),
   );
 
   function editarEvento(evento) {
     navigation.navigate("EventForm", { evento });
   }
 
-  async function confirmarExclusao(evento) {
-    const confirmado = window.confirm(`Deseja excluir "${evento.titulo}"?`);
-
-    if (!confirmado) {
-      return;
-    }
-
+  async function excluirEvento(evento) {
     try {
       await api.delete(`/events/${evento.id}`);
 
-      window.alert("Evento excluído com sucesso.");
+      setEventos((eventosAtuais) =>
+        eventosAtuais.filter((item) => item.id !== evento.id),
+      );
 
-      navigation.goBack();
+      Alert.alert("Sucesso", "Evento excluído com sucesso.");
     } catch (error) {
       console.log(error);
 
-      window.alert("Não foi possível excluir o evento.");
+      Alert.alert("Erro", "Não foi possível excluir o evento.");
     }
+  }
+
+  function confirmarExclusao(evento) {
+    Alert.alert(
+      "Excluir evento",
+      `Deseja excluir "${evento.titulo}"?`,
+      [
+        {
+          text: "Cancelar",
+          style: "cancel",
+        },
+        {
+          text: "Excluir",
+          style: "destructive",
+          onPress: () => excluirEvento(evento),
+        },
+      ],
+    );
   }
 
   function abrirDetalhes(evento) {
@@ -105,11 +146,20 @@ export default function EventListScreen({ navigation }) {
         <View style={styles.circleBottom} />
 
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton}>
-            <Menu size={23} color={colors.white} />
-          </TouchableOpacity>
+          {somenteMeusEventos ? (
+            <TouchableOpacity
+              style={styles.headerButton}
+              onPress={() => navigation.goBack()}
+            >
+              <ArrowLeft size={23} color={colors.white} />
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.headerSpace} />
+          )}
 
-          <Text style={styles.headerTitle}>Eventos</Text>
+          <Text style={styles.headerTitle}>
+            {somenteMeusEventos ? "Meus Eventos" : "Eventos"}
+          </Text>
 
           <View style={styles.headerSpace} />
         </View>
@@ -126,16 +176,31 @@ export default function EventListScreen({ navigation }) {
               onChangeText={setBusca}
             />
           </View>
-
-          <TouchableOpacity style={styles.filterButton}>
-            <SlidersHorizontal size={21} color={colors.white} />
-          </TouchableOpacity>
         </View>
 
-        <Text style={styles.sectionTitle}>Eventos cadastrados</Text>
+        <Text style={styles.sectionTitle}>
+          {somenteMeusEventos
+            ? "Eventos cadastrados por mim"
+            : "Eventos cadastrados"}
+        </Text>
 
         <View style={styles.listArea}>
-          {eventos.map((evento) => (
+          {eventosFiltrados.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <CalendarDays size={26} color={colors.textMuted} />
+              <Text style={styles.emptyTitle}>
+                {somenteMeusEventos
+                  ? "Você ainda não cadastrou eventos"
+                  : "Nenhum evento encontrado"}
+              </Text>
+              <Text style={styles.emptyText}>
+                {somenteMeusEventos
+                  ? "Crie um novo evento para ele aparecer nesta lista."
+                  : "Tente mudar a busca ou cadastre um novo evento."}
+              </Text>
+            </View>
+          ) : (
+            eventosFiltrados.map((evento) => (
             <TouchableOpacity
               key={evento.id}
               style={styles.eventCard}
@@ -151,7 +216,7 @@ export default function EventListScreen({ navigation }) {
                   />
                 ) : (
                   <>
-                    {renderIcon(evento.icon)}
+                    <CalendarDays size={28} color={colors.white} />
 
                     <Text style={styles.imageText}>EVENTADS</Text>
                   </>
@@ -197,7 +262,8 @@ export default function EventListScreen({ navigation }) {
                 </View>
               </View>
             </TouchableOpacity>
-          ))}
+            ))
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -290,7 +356,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 14,
-    marginRight: 12,
   },
 
   searchInput: {
@@ -298,15 +363,6 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     color: colors.white,
     fontSize: 14,
-  },
-
-  filterButton: {
-    width: 52,
-    height: 52,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    alignItems: "center",
-    justifyContent: "center",
   },
 
   sectionTitle: {
@@ -318,6 +374,31 @@ const styles = StyleSheet.create({
 
   listArea: {
     gap: 16,
+  },
+
+  emptyCard: {
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 22,
+    padding: 22,
+    alignItems: "center",
+  },
+
+  emptyTitle: {
+    marginTop: 12,
+    fontSize: 15,
+    fontWeight: "bold",
+    color: colors.white,
+    textAlign: "center",
+  },
+
+  emptyText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: colors.textSoft,
+    textAlign: "center",
+    lineHeight: 18,
   },
 
   eventCard: {

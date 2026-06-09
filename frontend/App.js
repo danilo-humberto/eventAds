@@ -114,6 +114,7 @@ export default function App() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Main" component={MainTabs} />
+          <Stack.Screen name="MyEvents" component={EventListScreen} />
           <Stack.Screen name="EventForm" component={EventFormScreen} />
           <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
           <Stack.Screen

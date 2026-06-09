@@ -28,6 +28,7 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 
 import api from "../services/api";
 import { pickImage, uploadCompleto } from "../services/cloudinaryConfig";
+import { auth } from "../services/firebaseConfig";
 import { colors } from "../styles/colors";
 
 function formatarData(date) {
@@ -118,6 +119,14 @@ export default function EventFormScreen({ navigation, route }) {
 
       setLoading(true);
 
+      const firebaseUser = auth.currentUser;
+
+      if (!firebaseUser) {
+        Alert.alert("Erro", "Usuário não autenticado.");
+
+        return;
+      }
+
       let imageUrl = "";
 
       if (imagem) {
@@ -140,7 +149,8 @@ export default function EventFormScreen({ navigation, route }) {
         hora,
         local,
         imagem: imageUrl,
-        createdAt: new Date().toISOString(),
+        userId: eventoEdicao?.userId || firebaseUser.uid,
+        createdAt: eventoEdicao?.createdAt || new Date().toISOString(),
       };
 
       if (modoEdicao) {

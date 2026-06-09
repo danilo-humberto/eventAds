@@ -32,6 +32,7 @@ import api from "../services/api";
 
 export default function ProfileScreen({ navigation }) {
   const [usuario, setUsuario] = useState(null);
+  const [totalMeusEventos, setTotalMeusEventos] = useState(0);
 
   const [loading, setLoading] = useState(true);
 
@@ -49,11 +50,15 @@ export default function ProfileScreen({ navigation }) {
         return;
       }
 
-      const response = await api.get(
-        `/users?firebaseId=${firebaseUser.uid}`
-      );
+      const [usuarioResponse, eventosResponse] = await Promise.all([
+        api.get(`/users?firebaseId=${firebaseUser.uid}`),
+        api.get(`/events?userId=${firebaseUser.uid}`),
+      ]);
 
-      setUsuario(response.data[0]);
+      setUsuario(usuarioResponse.data[0]);
+      setTotalMeusEventos(
+        Array.isArray(eventosResponse.data) ? eventosResponse.data.length : 0
+      );
     } catch (error) {
       console.log(error);
 
@@ -71,10 +76,9 @@ export default function ProfileScreen({ navigation }) {
   }
 
   function meusEventos() {
-    Alert.alert(
-      "Meus eventos",
-      "Depois vamos filtrar os eventos cadastrados pelo usuário."
-    );
+    navigation.navigate("MyEvents", {
+      somenteMeusEventos: true,
+    });
   }
 
   function sairDaConta() {
@@ -178,7 +182,9 @@ export default function ProfileScreen({ navigation }) {
                 </Text>
 
                 <Text style={styles.menuSubtitle}>
-                  12 eventos cadastrados
+                  {totalMeusEventos === 1
+                    ? "1 evento cadastrado"
+                    : `${totalMeusEventos} eventos cadastrados`}
                 </Text>
               </View>
             </View>
