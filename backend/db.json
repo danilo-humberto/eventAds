@@ -5,7 +5,11 @@
       "nome": "Danilo Humberto",
       "email": "danilo@gmail.com",
       "id": "Uo0gWkcQzDc",
-      "foto": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780961817/v89p79zqbgwq7ecxh6sq.png"
+      "foto": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780961817/v89p79zqbgwq7ecxh6sq.png",
+      "pushToken": "ExponentPushToken[RYnW1dAi4VXK9DmpQP6TSB]",
+      "pushTokens": [
+        "ExponentPushToken[RYnW1dAi4VXK9DmpQP6TSB]"
+      ]
     },
     {
       "firebaseId": "5fgoNX0rjYhuRdHKoEG53px2cdS2",
@@ -19,7 +23,11 @@
       "nome": "Danilo Melo",
       "email": "dhpm@discente.ifpe.edu.br",
       "foto": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1781027538/bhnaf7jvoy80kmbykodl.jpg",
-      "id": "OeURM9th0Wk"
+      "id": "OeURM9th0Wk",
+      "pushToken": "ExponentPushToken[RYnW1dAi4VXK9DmpQP6TSB]",
+      "pushTokens": [
+        "ExponentPushToken[RYnW1dAi4VXK9DmpQP6TSB]"
+      ]
     }
   ],
   "events": [
@@ -28,22 +36,79 @@
       "descricao": "clã",
       "data": "07/10/2026",
       "hora": "20:00",
-      "local": "aldeia",
+      "local": "aldeia da folha",
       "imagem": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1780962868/llyhcb3ofvxeklu6czom.jpg",
       "userId": "PuWhPBenfURuBVLAoSuL6k0O6HJ2",
       "createdAt": "2026-06-08T23:54:28.465Z",
       "id": "b4mRaTHwsS4"
+    }
+  ],
+  "notifications": [
+    {
+      "userId": "PuWhPBenfURuBVLAoSuL6k0O6HJ2",
+      "eventId": "b4mRaTHwsS4",
+      "tipo": "atualizado",
+      "titulo": "Evento atualizado",
+      "mensagem": "akatsuki teve suas informações atualizadas.",
+      "detalhe": "07/10/2026 às 20:00 - aldeia da folha",
+      "lida": false,
+      "createdAt": "2026-06-15T18:31:42.931Z",
+      "id": "H24xLnb-5LM"
     },
     {
-      "titulo": "Teste",
-      "descricao": "Teste",
-      "data": "10/06/2026",
-      "hora": "14:32",
-      "local": "Teste",
-      "imagem": "https://res.cloudinary.com/dtjie5qfj/image/upload/v1781026385/juel2zi5kvdbbv7njesb.jpg",
+      "userId": "HftFwLJGg7eue2PK8J5B7sMRJCn2",
+      "eventId": "b4mRaTHwsS4",
+      "tipo": "atualizado",
+      "titulo": "Evento atualizado",
+      "mensagem": "akatsuki teve suas informações atualizadas.",
+      "detalhe": "07/10/2026 às 20:00 - aldeia da folha",
+      "lida": false,
+      "createdAt": "2026-06-15T18:31:42.931Z",
+      "id": "V-sApccspos"
+    },
+    {
+      "userId": "5fgoNX0rjYhuRdHKoEG53px2cdS2",
+      "eventId": "b4mRaTHwsS4",
+      "tipo": "atualizado",
+      "titulo": "Evento atualizado",
+      "mensagem": "akatsuki teve suas informações atualizadas.",
+      "detalhe": "07/10/2026 às 20:00 - aldeia da folha",
+      "lida": false,
+      "createdAt": "2026-06-15T18:31:42.931Z",
+      "id": "t4KjfiBaefY"
+    },
+    {
       "userId": "PuWhPBenfURuBVLAoSuL6k0O6HJ2",
-      "createdAt": "2026-06-09T17:33:05.944Z",
-      "id": "rjyP8aXuakA"
+      "eventId": "rjyP8aXuakA",
+      "tipo": "excluido",
+      "titulo": "Evento excluído",
+      "mensagem": "Teste foi removido do EventADS.",
+      "detalhe": "10/06/2026 às 14:32 - Teste",
+      "lida": false,
+      "createdAt": "2026-06-15T18:43:28.501Z",
+      "id": "oConOwst10M"
+    },
+    {
+      "userId": "5fgoNX0rjYhuRdHKoEG53px2cdS2",
+      "eventId": "rjyP8aXuakA",
+      "tipo": "excluido",
+      "titulo": "Evento excluído",
+      "mensagem": "Teste foi removido do EventADS.",
+      "detalhe": "10/06/2026 às 14:32 - Teste",
+      "lida": false,
+      "createdAt": "2026-06-15T18:43:28.501Z",
+      "id": "bszN0a_Y6SE"
+    },
+    {
+      "userId": "HftFwLJGg7eue2PK8J5B7sMRJCn2",
+      "eventId": "rjyP8aXuakA",
+      "tipo": "excluido",
+      "titulo": "Evento excluído",
+      "mensagem": "Teste foi removido do EventADS.",
+      "detalhe": "10/06/2026 às 14:32 - Teste",
+      "lida": false,
+      "createdAt": "2026-06-15T18:43:28.501Z",
+      "id": "o2p11GU93q4"
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

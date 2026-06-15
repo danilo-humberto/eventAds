@@ -9,15 +9,42 @@ import {
 } from "react-native";
 
 import { CalendarDays, GraduationCap } from "lucide-react-native";
+import { onAuthStateChanged } from "@firebase/auth";
+
+import { auth } from "../services/firebaseConfig";
 
 export default function SplashScreen({ navigation }) {
   useEffect(() => {
+    let authResolved = false;
+    let timerFinished = false;
+    let nextRoute = "Login";
+
+    function navigateWhenReady() {
+      if (!authResolved || !timerFinished) {
+        return;
+      }
+
+      navigation.replace(nextRoute);
+    }
+
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      authResolved = true;
+      nextRoute = user ? "Main" : "Login";
+
+      navigateWhenReady();
+    });
+
     const timer = setTimeout(() => {
-      navigation.replace("Login");
+      timerFinished = true;
+
+      navigateWhenReady();
     }, 2000);
 
-    return () => clearTimeout(timer);
-  }, []);
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
+  }, [navigation]);
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor="#0F172A" />

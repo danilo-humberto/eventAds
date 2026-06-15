@@ -1,9 +1,9 @@
+import { Alert } from "react-native";
+
 import * as ImagePicker from "expo-image-picker";
 
 const CLOUD_NAME = "dtjie5qfj";
 const UPLOAD_PRESET = "eventAds";
-
-const BACKEND_URL = "http://192.168.1.24:3001";
 
 export async function pickImage() {
   const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();

@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
   Platform,
   SafeAreaView,
   ScrollView,
@@ -29,7 +30,10 @@ import DateTimePicker from "@react-native-community/datetimepicker";
 import api from "../services/api";
 import { pickImage, uploadCompleto } from "../services/cloudinaryConfig";
 import { auth } from "../services/firebaseConfig";
-import { addStoredNotification } from "../services/notificationStorage";
+import {
+  notificarEventoAtualizado,
+  notificarNovoEvento,
+} from "../services/notificationService";
 import { colors } from "../styles/colors";
 
 function formatarData(date) {
@@ -61,6 +65,8 @@ export default function EventFormScreen({ navigation, route }) {
   const [horaSelecionada, setHoraSelecionada] = useState(new Date());
   const [mostrarCalendario, setMostrarCalendario] = useState(false);
   const [mostrarRelogio, setMostrarRelogio] = useState(false);
+  const [scrollBottomPadding, setScrollBottomPadding] = useState(100);
+  const scrollViewRef = useRef(null);
 
   function alterarData(event, selectedDate) {
     if (Platform.OS === "android") {
@@ -129,7 +135,7 @@ export default function EventFormScreen({ navigation, route }) {
       }
 
       if (modoEdicao && eventoEdicao?.userId !== firebaseUser.uid) {
-        Alert.alert("Permissao negada", "Apenas o criador pode editar este evento.");
+        Alert.alert("Permissão negada", "Apenas o criador pode editar este evento.");
 
         return;
       }
@@ -161,10 +167,20 @@ export default function EventFormScreen({ navigation, route }) {
       };
 
       if (modoEdicao) {
-        await api.put(`/events/${eventoEdicao.id}`, {
+        const response = await api.put(`/events/${eventoEdicao.id}`, {
           ...eventoEdicao,
           ...novoEvento,
         });
+        const eventoAtualizado = response.data || {
+          ...eventoEdicao,
+          ...novoEvento,
+        };
+
+        try {
+          await notificarEventoAtualizado(eventoAtualizado);
+        } catch (notificationError) {
+          console.log(notificationError);
+        }
 
         Alert.alert("Sucesso", "Evento atualizado com sucesso.");
 
@@ -177,14 +193,7 @@ export default function EventFormScreen({ navigation, route }) {
       const eventoCriado = response.data || novoEvento;
 
       try {
-        await addStoredNotification({
-          id: `${eventoCriado.id || Date.now()}-novo`,
-          tipo: "novo",
-          titulo: "Novo evento cadastrado",
-          mensagem: `${titulo} foi adicionado ao EventADS.`,
-          detalhe: `${data} às ${hora} - ${local}`,
-          createdAt: new Date().toISOString(),
-        });
+        await notificarNovoEvento(eventoCriado);
       } catch (notificationError) {
         console.log(notificationError);
       }
@@ -228,14 +237,39 @@ export default function EventFormScreen({ navigation, route }) {
     return `${numeros.slice(0, 2)}:${numeros.slice(2, 4)}`;
   }
 
+  function focarCampoFinal() {
+    if (Platform.OS === "web") {
+      return;
+    }
+
+    setScrollBottomPadding(280);
+
+    setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true });
+    }, 250);
+  }
+
+  function desfocarCampoFinal() {
+    setScrollBottomPadding(100);
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <KeyboardAvoidingView
+        style={styles.keyboardArea}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
+        <ScrollView
+          ref={scrollViewRef}
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: scrollBottomPadding },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
         <View style={styles.circleTop} />
         <View style={styles.circleBottom} />
 
@@ -408,6 +442,8 @@ export default function EventFormScreen({ navigation, route }) {
               placeholderTextColor={colors.textMuted}
               value={local}
               onChangeText={setLocal}
+              onFocus={focarCampoFinal}
+              onBlur={desfocarCampoFinal}
             />
           </View>
 
@@ -421,7 +457,8 @@ export default function EventFormScreen({ navigation, route }) {
             )}
           </TouchableOpacity>
         </View>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -432,11 +469,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
   },
 
+  keyboardArea: {
+    flex: 1,
+  },
+
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingTop: 45,
-    paddingBottom: 100,
   },
 
   circleTop: {

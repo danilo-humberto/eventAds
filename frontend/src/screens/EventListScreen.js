@@ -26,6 +26,7 @@ import {
 
 import api from "../services/api";
 import { auth } from "../services/firebaseConfig";
+import { notificarEventoExcluido } from "../services/notificationService";
 import { colors } from "../styles/colors";
 
 export default function EventListScreen({ navigation, route }) {
@@ -88,7 +89,7 @@ export default function EventListScreen({ navigation, route }) {
 
   function editarEvento(evento) {
     if (!usuarioPodeGerenciar(evento)) {
-      Alert.alert("Permissao negada", "Apenas o criador pode editar este evento.");
+      Alert.alert("Permissão negada", "Apenas o criador pode editar este evento.");
 
       return;
     }
@@ -99,12 +100,18 @@ export default function EventListScreen({ navigation, route }) {
   async function excluirEvento(evento) {
     try {
       if (!usuarioPodeGerenciar(evento)) {
-        Alert.alert("Permissao negada", "Apenas o criador pode excluir este evento.");
+        Alert.alert("Permissão negada", "Apenas o criador pode excluir este evento.");
 
         return;
       }
 
       await api.delete(`/events/${evento.id}`);
+
+      try {
+        await notificarEventoExcluido(evento);
+      } catch (notificationError) {
+        console.log(notificationError);
+      }
 
       setEventos((eventosAtuais) =>
         eventosAtuais.filter((item) => item.id !== evento.id),
@@ -120,7 +127,7 @@ export default function EventListScreen({ navigation, route }) {
 
   function confirmarExclusao(evento) {
     if (!usuarioPodeGerenciar(evento)) {
-      Alert.alert("Permissao negada", "Apenas o criador pode excluir este evento.");
+      Alert.alert("Permissão negada", "Apenas o criador pode excluir este evento.");
 
       return;
     }

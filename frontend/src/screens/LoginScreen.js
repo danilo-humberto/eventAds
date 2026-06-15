@@ -20,10 +20,11 @@ import {
   Eye,
   EyeOff,
 } from "lucide-react-native";
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { signInWithEmailAndPassword } from "@firebase/auth";
 
 import { colors } from "../styles/colors";
 import { auth } from "../services/firebaseConfig";
+import { registrarPushTokenUsuarioAtual } from "../services/notificationService";
 
 export default function LoginScreen({ navigation }) {
   const [email, setEmail] = useState("");
@@ -41,6 +42,7 @@ export default function LoginScreen({ navigation }) {
       setCarregando(true);
 
       await signInWithEmailAndPassword(auth, email, senha);
+      await registrarPushTokenUsuarioAtual();
 
       navigation.replace("Main");
     } catch (error) {

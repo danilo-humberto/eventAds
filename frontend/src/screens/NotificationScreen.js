@@ -22,11 +22,8 @@ import {
   Trash2,
 } from "lucide-react-native";
 
-import {
-  clearStoredNotifications,
-  getStoredNotifications,
-  removeStoredNotification,
-} from "../services/notificationStorage";
+import api from "../services/api";
+import { auth } from "../services/firebaseConfig";
 import { colors } from "../styles/colors";
 
 function formatarTempo(createdAt) {
@@ -74,9 +71,24 @@ export default function NotificationScreen() {
     try {
       setLoading(true);
 
-      const storedNotifications = await getStoredNotifications();
+      const firebaseUser = auth.currentUser;
 
-      setNotificacoes(storedNotifications);
+      if (!firebaseUser) {
+        setNotificacoes([]);
+
+        return;
+      }
+
+      const response = await api.get(
+        `/notifications?userId=${firebaseUser.uid}`,
+      );
+      const notifications = Array.isArray(response.data) ? response.data : [];
+
+      setNotificacoes(
+        notifications.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt),
+        ),
+      );
     } catch (error) {
       console.log(error);
 
@@ -88,10 +100,13 @@ export default function NotificationScreen() {
 
   async function apagarNotificacao(notificationId) {
     try {
-      const updatedNotifications =
-        await removeStoredNotification(notificationId);
+      await api.delete(`/notifications/${notificationId}`);
 
-      setNotificacoes(updatedNotifications);
+      setNotificacoes((notificacoesAtuais) =>
+        notificacoesAtuais.filter(
+          (notificacao) => String(notificacao.id) !== String(notificationId),
+        ),
+      );
     } catch (error) {
       console.log(error);
 
@@ -117,9 +132,13 @@ export default function NotificationScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const updatedNotifications = await clearStoredNotifications();
+              await Promise.all(
+                notificacoes.map((notificacao) =>
+                  api.delete(`/notifications/${notificacao.id}`),
+                ),
+              );
 
-              setNotificacoes(updatedNotifications);
+              setNotificacoes([]);
             } catch (error) {
               console.log(error);
 
@@ -140,6 +159,10 @@ export default function NotificationScreen() {
       return <Clock size={22} color={colors.white} />;
     }
 
+    if (tipo === "excluido") {
+      return <Trash2 size={22} color={colors.white} />;
+    }
+
     return <CalendarPlus size={22} color={colors.white} />;
   }
 
@@ -150,6 +173,10 @@ export default function NotificationScreen() {
 
     if (tipo === "lembrete") {
       return [styles.iconBox, styles.iconOrange];
+    }
+
+    if (tipo === "excluido") {
+      return [styles.iconBox, styles.iconRed];
     }
 
     return [styles.iconBox, styles.iconBlue];
@@ -189,7 +216,7 @@ export default function NotificationScreen() {
               {notificacoes.length} notificações
             </Text>
             <Text style={styles.summaryText}>
-              Eventos cadastrados, alterações e lembretes recentes.
+              Cadastros, alterações, exclusões e lembretes recentes.
             </Text>
           </View>
         </View>
@@ -456,6 +483,10 @@ const styles = StyleSheet.create({
 
   iconOrange: {
     backgroundColor: "#F97316",
+  },
+
+  iconRed: {
+    backgroundColor: colors.danger,
   },
 
   notificationContent: {

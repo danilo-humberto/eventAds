@@ -9,7 +9,7 @@ import {
   StatusBar,
 } from "react-native";
 
-import { signOut } from "firebase/auth";
+import { signOut } from "@firebase/auth";
 import { LogOut } from "lucide-react-native";
 
 import { auth } from "../services/firebaseConfig";

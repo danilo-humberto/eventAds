@@ -25,9 +25,10 @@ import {
 
 import { pickImage, uploadImage } from "../services/cloudinaryConfig";
 
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword } from "@firebase/auth";
 import api from "../services/api";
 import { auth } from "../services/firebaseConfig";
+import { registrarPushTokenParaUsuario } from "../services/notificationService";
 import { colors } from "../styles/colors";
 
 export default function RegisterScreen({ navigation }) {
@@ -68,12 +69,14 @@ export default function RegisterScreen({ navigation }) {
         imageUrl = uploadedImage.secure_url;
       }
 
-      await api.post(`/users`, {
+      const response = await api.post(`/users`, {
         firebaseId: usuarioFirebase.uid,
         nome,
         email,
         foto: imageUrl,
       });
+
+      await registrarPushTokenParaUsuario(response.data);
 
       Alert.alert("Sucesso", "Usuário cadastrado com sucesso!");
 

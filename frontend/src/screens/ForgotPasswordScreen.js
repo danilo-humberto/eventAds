@@ -14,7 +14,7 @@ import {
 } from "react-native";
 
 import { ArrowLeft, LockKeyhole, Mail, Send } from "lucide-react-native";
-import { sendPasswordResetEmail } from "firebase/auth";
+import { sendPasswordResetEmail } from "@firebase/auth";
 
 import { auth } from "../services/firebaseConfig";
 import { colors } from "../styles/colors";
