@@ -26,7 +26,7 @@ import {
 import { pickImage, uploadImage } from "../services/cloudinaryConfig";
 
 import { createUserWithEmailAndPassword } from "@firebase/auth";
-import api from "../services/api";
+import { createUser } from "../api/users.api";
 import { auth } from "../services/firebaseConfig";
 import { registrarPushTokenParaUsuario } from "../services/notificationService";
 import { colors } from "../styles/colors";
@@ -69,7 +69,7 @@ export default function RegisterScreen({ navigation }) {
         imageUrl = uploadedImage.secure_url;
       }
 
-      const response = await api.post(`/users`, {
+      const response = await createUser({
         firebaseId: usuarioFirebase.uid,
         nome,
         email,
@@ -82,7 +82,7 @@ export default function RegisterScreen({ navigation }) {
 
       navigation.goBack();
     } catch (error) {
-      console.log(error);
+      console.log(error.response?.data || error.message);
       setCarregando(false);
 
       if (error.code === "auth/email-already-in-use") {

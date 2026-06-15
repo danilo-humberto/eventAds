@@ -24,11 +24,11 @@ import {
   UserRound,
 } from "lucide-react-native";
 
+import { getEventsByUserId } from "../api/events.api";
+import { getUserByFirebaseId } from "../api/users.api";
 import { colors } from "../styles/colors";
 
 import { auth } from "../services/firebaseConfig";
-
-import api from "../services/api";
 
 export default function ProfileScreen({ navigation }) {
   const [usuario, setUsuario] = useState(null);
@@ -51,8 +51,8 @@ export default function ProfileScreen({ navigation }) {
       }
 
       const [usuarioResponse, eventosResponse] = await Promise.all([
-        api.get(`/users?firebaseId=${firebaseUser.uid}`),
-        api.get(`/events?userId=${firebaseUser.uid}`),
+        getUserByFirebaseId(firebaseUser.uid),
+        getEventsByUserId(firebaseUser.uid),
       ]);
 
       setUsuario(usuarioResponse.data[0]);

@@ -27,7 +27,7 @@ import {
 
 import DateTimePicker from "@react-native-community/datetimepicker";
 
-import api from "../services/api";
+import { createEvent, updateEvent } from "../api/events.api";
 import { pickImage, uploadCompleto } from "../services/cloudinaryConfig";
 import { auth } from "../services/firebaseConfig";
 import {
@@ -167,7 +167,7 @@ export default function EventFormScreen({ navigation, route }) {
       };
 
       if (modoEdicao) {
-        const response = await api.put(`/events/${eventoEdicao.id}`, {
+        const response = await updateEvent(eventoEdicao.id, {
           ...eventoEdicao,
           ...novoEvento,
         });
@@ -189,7 +189,7 @@ export default function EventFormScreen({ navigation, route }) {
         return;
       }
 
-      const response = await api.post("/events", novoEvento);
+      const response = await createEvent(novoEvento);
       const eventoCriado = response.data || novoEvento;
 
       try {

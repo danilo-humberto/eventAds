@@ -19,14 +19,11 @@ import {
   CalendarDays,
   Clock,
   MapPin,
-  Pencil,
   Search,
-  Trash2,
 } from "lucide-react-native";
 
-import api from "../services/api";
+import { getEvents, getEventsByUserId } from "../api/events.api";
 import { auth } from "../services/firebaseConfig";
-import { notificarEventoExcluido } from "../services/notificationService";
 import { colors } from "../styles/colors";
 
 export default function EventListScreen({ navigation, route }) {
@@ -52,18 +49,16 @@ export default function EventListScreen({ navigation, route }) {
       setLoading(true);
 
       const firebaseUser = auth.currentUser;
-      const endpoint =
-        somenteMeusEventos && firebaseUser
-          ? `/events?userId=${firebaseUser.uid}`
-          : "/events";
-
       if (somenteMeusEventos && !firebaseUser) {
         setEventos([]);
 
         return;
       }
 
-      const response = await api.get(endpoint);
+      const response =
+        somenteMeusEventos && firebaseUser
+          ? await getEventsByUserId(firebaseUser.uid)
+          : await getEvents();
 
       setEventos(response.data);
     } catch (error) {
@@ -85,68 +80,6 @@ export default function EventListScreen({ navigation, route }) {
     const firebaseUser = auth.currentUser;
 
     return !!firebaseUser?.uid && evento?.userId === firebaseUser.uid;
-  }
-
-  function editarEvento(evento) {
-    if (!usuarioPodeGerenciar(evento)) {
-      Alert.alert("Permissão negada", "Apenas o criador pode editar este evento.");
-
-      return;
-    }
-
-    navigation.navigate("EventForm", { evento });
-  }
-
-  async function excluirEvento(evento) {
-    try {
-      if (!usuarioPodeGerenciar(evento)) {
-        Alert.alert("Permissão negada", "Apenas o criador pode excluir este evento.");
-
-        return;
-      }
-
-      await api.delete(`/events/${evento.id}`);
-
-      try {
-        await notificarEventoExcluido(evento);
-      } catch (notificationError) {
-        console.log(notificationError);
-      }
-
-      setEventos((eventosAtuais) =>
-        eventosAtuais.filter((item) => item.id !== evento.id),
-      );
-
-      Alert.alert("Sucesso", "Evento excluído com sucesso.");
-    } catch (error) {
-      console.log(error);
-
-      Alert.alert("Erro", "Não foi possível excluir o evento.");
-    }
-  }
-
-  function confirmarExclusao(evento) {
-    if (!usuarioPodeGerenciar(evento)) {
-      Alert.alert("Permissão negada", "Apenas o criador pode excluir este evento.");
-
-      return;
-    }
-
-    Alert.alert(
-      "Excluir evento",
-      `Deseja excluir "${evento.titulo}"?`,
-      [
-        {
-          text: "Cancelar",
-          style: "cancel",
-        },
-        {
-          text: "Excluir",
-          style: "destructive",
-          onPress: () => excluirEvento(evento),
-        },
-      ],
-    );
   }
 
   function abrirDetalhes(evento) {
@@ -273,26 +206,6 @@ export default function EventListScreen({ navigation, route }) {
                   <MapPin size={13} color={colors.textMuted} />
                   <Text style={styles.eventInfoText}>{evento.local}</Text>
                 </View>
-
-                {usuarioPodeGerenciar(evento) && (
-                  <View style={styles.actionsRow}>
-                    <TouchableOpacity
-                      style={styles.editButton}
-                      onPress={() => editarEvento(evento)}
-                    >
-                      <Pencil size={13} color={colors.white} />
-                      <Text style={styles.actionButtonText}>Editar</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.deleteButton}
-                      onPress={() => confirmarExclusao(evento)}
-                    >
-                      <Trash2 size={13} color={colors.white} />
-                      <Text style={styles.actionButtonText}>Excluir</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
               </View>
             </TouchableOpacity>
             ))
@@ -495,36 +408,5 @@ const styles = StyleSheet.create({
     color: colors.textSoft,
     marginLeft: 5,
     marginRight: 9,
-  },
-
-  actionsRow: {
-    flexDirection: "row",
-    marginTop: 12,
-    gap: 8,
-  },
-
-  editButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.primary,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-
-  deleteButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: colors.danger,
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-  },
-
-  actionButtonText: {
-    marginLeft: 5,
-    fontSize: 11,
-    color: colors.white,
-    fontWeight: "700",
   },
 });

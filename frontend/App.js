@@ -1,27 +1,26 @@
-import React from "react";
-import { View, Text, StyleSheet } from "react-native";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
-import { Home, CalendarDays, Bell, UserRound } from "lucide-react-native";
+import { Bell, CalendarDays, UserRound } from "lucide-react-native";
 
-import "./src/services/notificationService";
-import SplashScreen from "./src/screens/SplashScreen";
 import LoginScreen from "./src/screens/LoginScreen";
 import RegisterScreen from "./src/screens/RegisterScreen";
-import HomeScreen from "./src/screens/HomeScreen";
+import SplashScreen from "./src/screens/SplashScreen";
+import "./src/services/notificationService";
 
-import { colors } from "./src/styles/colors";
-import EventListScreen from "./src/screens/EventListScreen";
-import EventFormScreen from "./src/screens/EventFormScreen";
+import EditProfileScreen from "./src/screens/EditProfileScreen";
 import EventDetailsScreen from "./src/screens/EventDetailsScreen";
-import NotificationScreen from "./src/screens/NotificationScreen";
-import ProfileScreen from "./src/screens/ProfileScreen";
+import EventFormScreen from "./src/screens/EventFormScreen";
+import EventListScreen from "./src/screens/EventListScreen";
 import ForgotPasswordScreen from "./src/screens/ForgotPasswordScreen";
 import LogoutConfirmScreen from "./src/screens/LogoutConfirmScreen";
-import EditProfileScreen from "./src/screens/EditProfileScreen";
+import MyEvents from "./src/screens/MyEvents";
+import NotificationScreen from "./src/screens/NotificationScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
+import { colors } from "./src/styles/colors";
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -58,16 +57,6 @@ function MainTabs() {
         },
       }}
     >
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <Home size={21} color={color} strokeWidth={2.4} />
-          ),
-        }}
-      />
-
       <Tab.Screen
         name="Eventos"
         component={EventListScreen}
@@ -115,7 +104,7 @@ export default function App() {
           <Stack.Screen name="Login" component={LoginScreen} />
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="Main" component={MainTabs} />
-          <Stack.Screen name="MyEvents" component={EventListScreen} />
+          <Stack.Screen name="MyEvents" component={MyEvents} />
           <Stack.Screen name="EventForm" component={EventFormScreen} />
           <Stack.Screen name="EventDetails" component={EventDetailsScreen} />
           <Stack.Screen

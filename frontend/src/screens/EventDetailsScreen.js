@@ -20,7 +20,7 @@ import {
   Trash2,
 } from "lucide-react-native";
 
-import api from "../services/api";
+import { deleteEvent } from "../api/events.api";
 import { auth } from "../services/firebaseConfig";
 import { notificarEventoExcluido } from "../services/notificationService";
 import { colors } from "../styles/colors";
@@ -53,7 +53,7 @@ export default function EventDetailsScreen({ navigation, route }) {
         return;
       }
 
-      await api.delete(`/events/${evento.id}`);
+      await deleteEvent(evento.id);
 
       try {
         await notificarEventoExcluido(evento);

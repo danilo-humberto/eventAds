@@ -18,11 +18,10 @@ import { useFocusEffect } from "@react-navigation/native";
 
 import { ArrowLeft, Camera, Mail, Save, UserRound } from "lucide-react-native";
 
+import { getUserByFirebaseId, updateUser } from "../api/users.api";
 import { colors } from "../styles/colors";
 
 import { auth } from "../services/firebaseConfig";
-
-import api from "../services/api";
 
 import { pickImage, uploadImage } from "../services/cloudinaryConfig";
 
@@ -53,7 +52,7 @@ export default function EditProfileScreen({ navigation }) {
         return;
       }
 
-      const response = await api.get(`/users?firebaseId=${firebaseUser.uid}`);
+      const response = await getUserByFirebaseId(firebaseUser.uid);
 
       const user = response.data[0];
 
@@ -119,7 +118,7 @@ export default function EditProfileScreen({ navigation }) {
         imageUrl = uploadedImage.secure_url;
       }
 
-      await api.patch(`/users/${usuarioId}`, {
+      await updateUser(usuarioId, {
         nome,
         foto: imageUrl,
       });

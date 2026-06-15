@@ -5,7 +5,8 @@ import Constants from "expo-constants";
 import * as Device from "expo-device";
 import * as Notifications from "expo-notifications";
 
-import api from "./api";
+import { createNotification } from "../api/notifications.api";
+import { getUserByFirebaseId, getUsers, updateUser } from "../api/users.api";
 import { auth } from "./firebaseConfig";
 
 const EXPO_PUSH_ENDPOINT = "https://exp.host/--/api/v2/push/send";
@@ -166,7 +167,7 @@ export async function registrarPushTokenParaUsuario(usuario) {
 
     const pushTokens = [...new Set([...getUserPushTokens(usuario), pushToken])];
 
-    await api.patch(`/users/${usuario.id}`, {
+    await updateUser(usuario.id, {
       pushToken,
       pushTokens,
     });
@@ -187,7 +188,7 @@ export async function registrarPushTokenUsuarioAtual() {
       return null;
     }
 
-    const response = await api.get(`/users?firebaseId=${firebaseUser.uid}`);
+    const response = await getUserByFirebaseId(firebaseUser.uid);
     const usuario = response.data?.[0];
 
     return registrarPushTokenParaUsuario(usuario);
@@ -245,7 +246,7 @@ async function criarNotificacoesNoBackend(evento, usuarios, tipo) {
     }));
 
   await Promise.all(
-    notificacoes.map((notificacao) => api.post("/notifications", notificacao)),
+    notificacoes.map((notificacao) => createNotification(notificacao)),
   );
 
   return notificacoes;
@@ -257,7 +258,7 @@ async function notificarEvento(evento, tipo) {
       return;
     }
 
-    const response = await api.get("/users");
+    const response = await getUsers();
     const usuarios = Array.isArray(response.data) ? response.data : [];
     const notification = getNotificationPayload(evento, tipo);
     const tokens = usuarios.flatMap(getUserPushTokens);

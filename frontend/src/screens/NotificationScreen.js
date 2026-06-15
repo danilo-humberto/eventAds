@@ -22,7 +22,11 @@ import {
   Trash2,
 } from "lucide-react-native";
 
-import api from "../services/api";
+import {
+  deleteNotification,
+  deleteNotifications,
+  getNotificationsByUserId,
+} from "../api/notifications.api";
 import { auth } from "../services/firebaseConfig";
 import { colors } from "../styles/colors";
 
@@ -79,9 +83,7 @@ export default function NotificationScreen() {
         return;
       }
 
-      const response = await api.get(
-        `/notifications?userId=${firebaseUser.uid}`,
-      );
+      const response = await getNotificationsByUserId(firebaseUser.uid);
       const notifications = Array.isArray(response.data) ? response.data : [];
 
       setNotificacoes(
@@ -100,7 +102,7 @@ export default function NotificationScreen() {
 
   async function apagarNotificacao(notificationId) {
     try {
-      await api.delete(`/notifications/${notificationId}`);
+      await deleteNotification(notificationId);
 
       setNotificacoes((notificacoesAtuais) =>
         notificacoesAtuais.filter(
@@ -132,11 +134,7 @@ export default function NotificationScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              await Promise.all(
-                notificacoes.map((notificacao) =>
-                  api.delete(`/notifications/${notificacao.id}`),
-                ),
-              );
+              await deleteNotifications(notificacoes);
 
               setNotificacoes([]);
             } catch (error) {
