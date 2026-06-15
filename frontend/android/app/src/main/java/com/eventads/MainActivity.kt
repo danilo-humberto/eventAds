@@ -1,4 +1,4 @@
-package com.frontend
+package com.eventads
 
 import android.os.Build
 import android.os.Bundle

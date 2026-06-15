@@ -1,12 +1,13 @@
 {
   "expo": {
-    "name": "frontend",
-    "slug": "frontend",
+    "name": "EventADS",
+    "slug": "eventads",
     "version": "1.0.0",
     "plugins": [
       "@react-native-community/datetimepicker"
     ],
     "android": {
+      "package": "com.eventads",
       "softwareKeyboardLayoutMode": "resize"
     }
   }
